@@ -57,6 +57,19 @@ Namespace Repositories
             End Using
         End Function
 
+        Public Function GetInvoiceDocument(invoiceId As Integer) As InvoiceDocument Implements IInvoiceRepository.GetInvoiceDocument
+            Using connection = _connectionFactory.CreateOpenConnection()
+                Dim document As InvoiceDocument = LoadInvoiceHeader(connection, invoiceId)
+                document.CompanyName = GetSetting(connection, "CompanyName", "Healthwond Pharmacy")
+                document.CompanyAddress = GetSetting(connection, "CompanyAddress", "Address not configured")
+                document.CompanyPhone = GetSetting(connection, "CompanyPhone", String.Empty)
+                document.CompanyGstin = GetSetting(connection, "CompanyGstin", String.Empty)
+                document.CompanyDrugLicenseNumber = GetSetting(connection, "CompanyDrugLicense", String.Empty)
+                document.Items = LoadInvoiceItems(connection, invoiceId)
+                Return document
+            End Using
+        End Function
+
         Private Function InsertInvoice(connection As DbConnection, transaction As DbTransaction, draft As BillingInvoiceDraft, createdByUserId As Integer) As Integer
             Using command = connection.CreateCommand()
                 command.Transaction = transaction
@@ -172,6 +185,83 @@ Namespace Repositories
             End Using
         End Sub
 
+        Private Function LoadInvoiceHeader(connection As DbConnection, invoiceId As Integer) As InvoiceDocument
+            Using command = connection.CreateCommand()
+                command.CommandText =
+                    "SELECT i.Id, i.InvoiceNumber, i.InvoiceDate, i.PaymentMode, i.Notes, i.SubTotal, i.DiscountAmount, i.SchemeAmount, i.GstAmount, i.RoundOffAmount, i.NetAmount, i.AmountPaid, i.BalanceAmount, " &
+                    "c.CustomerName, c.Gstin, c.DrugLicenseNumber, c.Address, c.Phone " &
+                    "FROM Invoices i " &
+                    "INNER JOIN Customers c ON c.Id = i.CustomerId " &
+                    "WHERE i.Id = @Id LIMIT 1;"
+                command.AddParameter("@Id", invoiceId)
+
+                Using reader = command.ExecuteReader()
+                    If Not reader.Read() Then
+                        Throw New InvalidOperationException($"Invoice Id {invoiceId} was not found.")
+                    End If
+
+                    Return New InvoiceDocument With {
+                        .InvoiceId = Convert.ToInt32(reader("Id"), CultureInfo.InvariantCulture),
+                        .InvoiceNumber = Convert.ToString(reader("InvoiceNumber"), CultureInfo.InvariantCulture),
+                        .InvoiceDate = ParseDate(reader("InvoiceDate")),
+                        .PaymentMode = ConvertNullableString(reader("PaymentMode")),
+                        .CustomerName = Convert.ToString(reader("CustomerName"), CultureInfo.InvariantCulture),
+                        .CustomerGstin = ConvertNullableString(reader("Gstin")),
+                        .CustomerDrugLicenseNumber = ConvertNullableString(reader("DrugLicenseNumber")),
+                        .CustomerAddress = ConvertNullableString(reader("Address")),
+                        .CustomerPhone = ConvertNullableString(reader("Phone")),
+                        .Notes = ConvertNullableString(reader("Notes")),
+                        .SubTotal = Convert.ToDecimal(reader("SubTotal"), CultureInfo.InvariantCulture),
+                        .DiscountAmount = Convert.ToDecimal(reader("DiscountAmount"), CultureInfo.InvariantCulture),
+                        .SchemeAmount = Convert.ToDecimal(reader("SchemeAmount"), CultureInfo.InvariantCulture),
+                        .GstAmount = Convert.ToDecimal(reader("GstAmount"), CultureInfo.InvariantCulture),
+                        .RoundOffAmount = Convert.ToDecimal(reader("RoundOffAmount"), CultureInfo.InvariantCulture),
+                        .NetAmount = Convert.ToDecimal(reader("NetAmount"), CultureInfo.InvariantCulture),
+                        .AmountPaid = Convert.ToDecimal(reader("AmountPaid"), CultureInfo.InvariantCulture),
+                        .BalanceAmount = Convert.ToDecimal(reader("BalanceAmount"), CultureInfo.InvariantCulture)
+                    }
+                End Using
+            End Using
+        End Function
+
+        Private Function LoadInvoiceItems(connection As DbConnection, invoiceId As Integer) As List(Of InvoiceDocumentItem)
+            Dim items As New List(Of InvoiceDocumentItem)()
+
+            Using command = connection.CreateCommand()
+                command.CommandText =
+                    "SELECT Id, BatchNumber, ExpiryDate, Quantity, FreeQuantity, Rate, MRP, DiscountPercentage, DiscountAmount, SchemeDescription, GstPercentage, TaxableAmount, GstAmount, LineTotal, " &
+                    "(SELECT ProductName FROM Products WHERE Products.Id = InvoiceItems.ProductId) AS ProductName " &
+                    "FROM InvoiceItems WHERE InvoiceId = @InvoiceId ORDER BY Id ASC;"
+                command.AddParameter("@InvoiceId", invoiceId)
+
+                Using reader = command.ExecuteReader()
+                    Dim lineNumber As Integer = 1
+                    While reader.Read()
+                        items.Add(New InvoiceDocumentItem With {
+                            .LineNumber = lineNumber,
+                            .ProductName = Convert.ToString(reader("ProductName"), CultureInfo.InvariantCulture),
+                            .BatchNumber = Convert.ToString(reader("BatchNumber"), CultureInfo.InvariantCulture),
+                            .ExpiryDate = ParseDate(reader("ExpiryDate")),
+                            .Quantity = Convert.ToInt32(reader("Quantity"), CultureInfo.InvariantCulture),
+                            .FreeQuantity = Convert.ToInt32(reader("FreeQuantity"), CultureInfo.InvariantCulture),
+                            .Rate = Convert.ToDecimal(reader("Rate"), CultureInfo.InvariantCulture),
+                            .MRP = Convert.ToDecimal(reader("MRP"), CultureInfo.InvariantCulture),
+                            .DiscountPercentage = Convert.ToDecimal(reader("DiscountPercentage"), CultureInfo.InvariantCulture),
+                            .DiscountAmount = Convert.ToDecimal(reader("DiscountAmount"), CultureInfo.InvariantCulture),
+                            .SchemeDescription = ConvertNullableString(reader("SchemeDescription")),
+                            .GstPercentage = Convert.ToDecimal(reader("GstPercentage"), CultureInfo.InvariantCulture),
+                            .TaxableAmount = Convert.ToDecimal(reader("TaxableAmount"), CultureInfo.InvariantCulture),
+                            .GstAmount = Convert.ToDecimal(reader("GstAmount"), CultureInfo.InvariantCulture),
+                            .LineTotal = Convert.ToDecimal(reader("LineTotal"), CultureInfo.InvariantCulture)
+                        })
+                        lineNumber += 1
+                    End While
+                End Using
+            End Using
+
+            Return items
+        End Function
+
         Private Function GetSetting(connection As DbConnection, settingKey As String, defaultValue As String) As String
             Using command = connection.CreateCommand()
                 command.CommandText = "SELECT SettingValue FROM Settings WHERE SettingKey = @SettingKey LIMIT 1;"
@@ -183,6 +273,23 @@ Namespace Repositories
 
                 Return Convert.ToString(result, CultureInfo.InvariantCulture)
             End Using
+        End Function
+
+        Private Function ParseDate(value As Object) As DateTime
+            Dim parsedDate As DateTime
+            If DateTime.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, DateTimeStyles.None, parsedDate) Then
+                Return parsedDate
+            End If
+
+            Return DateTime.Today
+        End Function
+
+        Private Function ConvertNullableString(value As Object) As String
+            If value Is Nothing OrElse value Is DBNull.Value Then
+                Return String.Empty
+            End If
+
+            Return Convert.ToString(value, CultureInfo.InvariantCulture)
         End Function
 
     End Class

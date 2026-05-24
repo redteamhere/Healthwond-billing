@@ -55,6 +55,12 @@ Namespace Utilities
             End Get
         End Property
 
+        Public Shared ReadOnly Property GstInvoiceTemplateFilePath As String
+            Get
+                Return Path.Combine(TemplatesDirectory, "GSTInvoiceTemplate.xlsx")
+            End Get
+        End Property
+
         Public Shared ReadOnly Property AssetsDirectory As String
             Get
                 Return Path.Combine(BaseDirectory, "Assets")

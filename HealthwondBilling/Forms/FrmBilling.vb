@@ -10,10 +10,13 @@ Namespace Forms
         Inherits Form
 
         Private ReadOnly _billingService As BillingService
+        Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _invoiceItems As New BindingList(Of BillingLineItem)()
         Private _customers As New List(Of CustomerRecord)()
         Private _products As New List(Of ProductRecord)()
         Private _isBusy As Boolean
+        Private _lastSavedInvoiceId As Integer
+        Private _lastSavedInvoiceNumber As String = String.Empty
 
         Private ReadOnly txtInvoiceNumber As New TextBox()
         Private ReadOnly dtpInvoiceDate As New DateTimePicker()
@@ -33,6 +36,10 @@ Namespace Forms
         Private ReadOnly dgvItems As New DataGridView()
         Private ReadOnly btnNewInvoice As New Button()
         Private ReadOnly btnSaveInvoice As New Button()
+        Private ReadOnly btnExportInvoice As New Button()
+        Private ReadOnly btnPrintPreview As New Button()
+        Private ReadOnly btnPrintInvoice As New Button()
+        Private ReadOnly btnOpenInvoiceFolder As New Button()
         Private ReadOnly btnClose As New Button()
         Private ReadOnly lblStatus As New Label()
 
@@ -44,8 +51,9 @@ Namespace Forms
         Private ReadOnly lblBalanceValue As New Label()
         Private ReadOnly txtTaxSummary As New TextBox()
 
-        Public Sub New(billingService As BillingService)
+        Public Sub New(billingService As BillingService, invoiceExportService As InvoiceExportService)
             _billingService = billingService
+            _invoiceExportService = invoiceExportService
 
             Text = "Healthwond Billing System - Billing"
             StartPosition = FormStartPosition.CenterParent
@@ -73,7 +81,7 @@ Namespace Forms
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 170))
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 122))
             root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 170))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 190))
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 36))
 
             root.Controls.Add(BuildHeaderPanel(), 0, 0)
@@ -244,8 +252,8 @@ Namespace Forms
                 .Dock = DockStyle.Fill,
                 .ColumnCount = 2
             }
-            root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 55.0F))
-            root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 45.0F))
+            root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 42.0F))
+            root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 58.0F))
 
             Dim totalsTable As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
@@ -267,8 +275,8 @@ Namespace Forms
             Dim buttonFlow As New FlowLayoutPanel With {
                 .Dock = DockStyle.Fill,
                 .FlowDirection = FlowDirection.LeftToRight,
-                .WrapContents = False,
-                .Padding = New Padding(0, 84, 0, 0),
+                .WrapContents = True,
+                .Padding = New Padding(0, 34, 0, 0),
                 .BackColor = Color.Transparent
             }
 
@@ -280,12 +288,32 @@ Namespace Forms
             btnSaveInvoice.Text = "Save Invoice"
             btnSaveInvoice.Width = 120
 
+            UiStyler.StyleSecondaryButton(btnExportInvoice)
+            btnExportInvoice.Text = "Export Excel/PDF"
+            btnExportInvoice.Width = 140
+
+            UiStyler.StyleSecondaryButton(btnPrintPreview)
+            btnPrintPreview.Text = "Print Preview"
+            btnPrintPreview.Width = 125
+
+            UiStyler.StyleSecondaryButton(btnPrintInvoice)
+            btnPrintInvoice.Text = "Instant Print"
+            btnPrintInvoice.Width = 115
+
+            UiStyler.StyleSecondaryButton(btnOpenInvoiceFolder)
+            btnOpenInvoiceFolder.Text = "Open Invoices"
+            btnOpenInvoiceFolder.Width = 120
+
             UiStyler.StyleSecondaryButton(btnClose)
             btnClose.Text = "Close"
             btnClose.Width = 90
 
             buttonFlow.Controls.Add(btnNewInvoice)
             buttonFlow.Controls.Add(btnSaveInvoice)
+            buttonFlow.Controls.Add(btnExportInvoice)
+            buttonFlow.Controls.Add(btnPrintPreview)
+            buttonFlow.Controls.Add(btnPrintInvoice)
+            buttonFlow.Controls.Add(btnOpenInvoiceFolder)
             buttonFlow.Controls.Add(btnClose)
 
             root.Controls.Add(totalsTable, 0, 0)
@@ -400,6 +428,10 @@ Namespace Forms
             AddHandler btnRemoveItem.Click, AddressOf btnRemoveItem_Click
             AddHandler btnNewInvoice.Click, AddressOf btnNewInvoice_Click
             AddHandler btnSaveInvoice.Click, AddressOf btnSaveInvoice_Click
+            AddHandler btnExportInvoice.Click, AddressOf btnExportInvoice_Click
+            AddHandler btnPrintPreview.Click, AddressOf btnPrintPreview_Click
+            AddHandler btnPrintInvoice.Click, AddressOf btnPrintInvoice_Click
+            AddHandler btnOpenInvoiceFolder.Click, AddressOf btnOpenInvoiceFolder_Click
             AddHandler btnClose.Click, AddressOf btnClose_Click
             AddHandler dgvItems.CellEndEdit, AddressOf dgvItems_CellEndEdit
             AddHandler dgvItems.DataError, AddressOf dgvItems_DataError
@@ -449,6 +481,7 @@ Namespace Forms
             txtInvoiceNumber.Text = Await _billingService.GenerateNextInvoiceNumberAsync(dtpInvoiceDate.Value.Date)
             ReindexLines()
             RefreshTotals()
+            UpdateExportActionState()
             ShowStatus("Ready to create a new invoice.", False)
         End Function
 
@@ -532,13 +565,76 @@ Namespace Forms
 
             SetBusy(True, "Saving invoice...")
             Dim result As InvoiceSaveResult = Await _billingService.SaveInvoiceAsync(draft, If(SessionManager.CurrentUser Is Nothing, 0, SessionManager.CurrentUser.Id))
+            If Not result.IsSuccess Then
+                SetBusy(False)
+                ShowStatus(result.Message, True)
+                Return
+            End If
+
+            _lastSavedInvoiceId = result.InvoiceId
+            _lastSavedInvoiceNumber = result.InvoiceNumber
+
+            Dim exportResult As InvoiceExportResult = Await _invoiceExportService.GenerateInvoiceFilesAsync(result.InvoiceId)
+            SetBusy(False)
+
+            Await LoadLookupsAsync()
+            Await PrepareNewInvoiceAsync()
+            UpdateExportActionState()
+
+            If exportResult.IsSuccess Then
+                ShowStatus($"{result.Message} Excel and PDF generated.", False)
+            Else
+                ShowStatus($"{result.Message} Export is pending. Use Export Excel/PDF to retry.", True)
+            End If
+        End Sub
+
+        Private Async Sub btnExportInvoice_Click(sender As Object, e As EventArgs)
+            If Not EnsureSavedInvoiceAvailable() Then
+                Return
+            End If
+
+            SetBusy(True, "Generating invoice files...")
+            Dim result As InvoiceExportResult = Await _invoiceExportService.GenerateInvoiceFilesAsync(_lastSavedInvoiceId)
             SetBusy(False)
             ShowStatus(result.Message, Not result.IsSuccess)
+        End Sub
 
-            If result.IsSuccess Then
-                Await LoadLookupsAsync()
-                Await PrepareNewInvoiceAsync()
+        Private Sub btnPrintPreview_Click(sender As Object, e As EventArgs)
+            If Not EnsureSavedInvoiceAvailable() Then
+                Return
             End If
+
+            Try
+                _invoiceExportService.ShowPrintPreview(_lastSavedInvoiceId)
+                ShowStatus($"Preview opened for invoice {_lastSavedInvoiceNumber}.", False)
+            Catch ex As Exception
+                AppLogger.Error($"Invoice preview failed for invoice Id {_lastSavedInvoiceId}.", ex)
+                ShowStatus("Print preview could not be opened.", True)
+            End Try
+        End Sub
+
+        Private Sub btnPrintInvoice_Click(sender As Object, e As EventArgs)
+            If Not EnsureSavedInvoiceAvailable() Then
+                Return
+            End If
+
+            Try
+                _invoiceExportService.PrintInvoice(_lastSavedInvoiceId)
+                ShowStatus($"Invoice {_lastSavedInvoiceNumber} sent to the default printer.", False)
+            Catch ex As Exception
+                AppLogger.Error($"Invoice print failed for invoice Id {_lastSavedInvoiceId}.", ex)
+                ShowStatus("Invoice could not be printed.", True)
+            End Try
+        End Sub
+
+        Private Sub btnOpenInvoiceFolder_Click(sender As Object, e As EventArgs)
+            Try
+                _invoiceExportService.OpenInvoiceFolder()
+                ShowStatus("Opened generated invoices folder.", False)
+            Catch ex As Exception
+                AppLogger.Error("Generated invoices folder could not be opened.", ex)
+                ShowStatus("Invoice folder could not be opened.", True)
+            End Try
         End Sub
 
         Private Sub btnClose_Click(sender As Object, e As EventArgs)
@@ -610,6 +706,10 @@ Namespace Forms
             btnRemoveItem.Enabled = Not isBusy
             btnNewInvoice.Enabled = Not isBusy
             btnSaveInvoice.Enabled = Not isBusy
+            btnExportInvoice.Enabled = Not isBusy AndAlso _lastSavedInvoiceId > 0
+            btnPrintPreview.Enabled = Not isBusy AndAlso _lastSavedInvoiceId > 0
+            btnPrintInvoice.Enabled = Not isBusy AndAlso _lastSavedInvoiceId > 0
+            btnOpenInvoiceFolder.Enabled = Not isBusy
             btnClose.Enabled = Not isBusy
             dgvItems.Enabled = Not isBusy
             dtpInvoiceDate.Enabled = Not isBusy
@@ -625,6 +725,22 @@ Namespace Forms
             lblStatus.Text = message
         End Sub
 
+        Private Function EnsureSavedInvoiceAvailable() As Boolean
+            If _lastSavedInvoiceId > 0 Then
+                Return True
+            End If
+
+            ShowStatus("Save an invoice first to export, preview, or print it.", True)
+            Return False
+        End Function
+
+        Private Sub UpdateExportActionState()
+            btnExportInvoice.Enabled = _lastSavedInvoiceId > 0 AndAlso Not _isBusy
+            btnPrintPreview.Enabled = _lastSavedInvoiceId > 0 AndAlso Not _isBusy
+            btnPrintInvoice.Enabled = _lastSavedInvoiceId > 0 AndAlso Not _isBusy
+            btnOpenInvoiceFolder.Enabled = Not _isBusy
+        End Sub
+
         Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
             Select Case keyData
                 Case Keys.F2
@@ -638,6 +754,15 @@ Namespace Forms
                     Return True
                 Case Keys.Control Or Keys.N
                     btnNewInvoice.PerformClick()
+                    Return True
+                Case Keys.Control Or Keys.E
+                    btnExportInvoice.PerformClick()
+                    Return True
+                Case Keys.Control Or Keys.P
+                    btnPrintInvoice.PerformClick()
+                    Return True
+                Case Keys.Control Or Keys.Shift Or Keys.P
+                    btnPrintPreview.PerformClick()
                     Return True
                 Case Keys.Delete
                     btnRemoveItem.PerformClick()

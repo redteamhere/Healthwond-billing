@@ -15,6 +15,7 @@ Namespace Forms
         Private ReadOnly _supplierService As SupplierService
         Private ReadOnly _billingService As BillingService
         Private ReadOnly _purchaseService As PurchaseService
+        Private ReadOnly _invoiceExportService As InvoiceExportService
 
         Private ReadOnly txtUsername As TextBox
         Private ReadOnly txtPassword As TextBox
@@ -23,7 +24,7 @@ Namespace Forms
         Private ReadOnly btnExit As Button
         Private ReadOnly lblStatus As Label
 
-        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService)
+        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService)
             _authService = authService
             _dashboardService = dashboardService
             _productService = productService
@@ -31,6 +32,7 @@ Namespace Forms
             _supplierService = supplierService
             _billingService = billingService
             _purchaseService = purchaseService
+            _invoiceExportService = invoiceExportService
 
             Text = "Healthwond Billing System - Login"
             StartPosition = FormStartPosition.CenterScreen
@@ -304,7 +306,7 @@ Namespace Forms
 
                 SessionManager.StartSession(result.User)
 
-                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService)
+                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _invoiceExportService)
                     Hide()
                     dashboard.ShowDialog(Me)
 

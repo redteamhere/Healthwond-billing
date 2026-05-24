@@ -14,6 +14,7 @@ Namespace Forms
         Private ReadOnly _supplierService As SupplierService
         Private ReadOnly _billingService As BillingService
         Private ReadOnly _purchaseService As PurchaseService
+        Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -29,13 +30,14 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
             _supplierService = supplierService
             _billingService = billingService
             _purchaseService = purchaseService
+            _invoiceExportService = invoiceExportService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -222,9 +224,9 @@ Namespace Forms
                     "- Authentication is active with hashed passwords and role-aware sessions.",
                     "- Product master supports search, CRUD, barcode, pricing, GST, expiry, and stock adjustments.",
                     "- Customer master supports search, CRUD, contact details, GSTINs, license numbers, and dues.",
-                    "- Billing now supports customer selection, product lines, GST totals, and invoice save with stock deduction.",
+                    "- Billing now supports customer selection, product lines, GST totals, invoice save, and Excel/PDF export with print actions.",
                     "- Purchases now support supplier management, batch stock-in, ledger posting, and payable accumulation.",
-                    "- Reports, invoice template export, and printing will follow in the next modules."),
+                    "- Reports and deeper inventory views will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -332,7 +334,7 @@ Namespace Forms
         End Sub
 
         Private Sub OpenBillingDialog()
-            Using form As New FrmBilling(_billingService)
+            Using form As New FrmBilling(_billingService, _invoiceExportService)
                 form.ShowDialog(Me)
             End Using
         End Sub

@@ -28,6 +28,10 @@ Namespace Database
             Dim createdAt As String = SqliteDateHelper.ToStorageDateTime(DateTime.Now)
 
             InsertSetting(connection, transaction, "CompanyName", "Healthwond Pharmacy", "Company display name used on invoices.", createdAt)
+            InsertSetting(connection, transaction, "CompanyAddress", "88 Medical Avenue, Bengaluru", "Primary company address displayed on invoices.", createdAt)
+            InsertSetting(connection, transaction, "CompanyPhone", "080-4000-1122", "Primary company phone displayed on invoices.", createdAt)
+            InsertSetting(connection, transaction, "CompanyGstin", "29AAACH2024H1ZX", "Company GSTIN displayed on invoices.", createdAt)
+            InsertSetting(connection, transaction, "CompanyDrugLicense", "DL-HWB-2024-01", "Company drug license displayed on invoices.", createdAt)
             InsertSetting(connection, transaction, "InvoicePrefix", "HWB", "Prefix for auto-generated invoice numbers.", createdAt)
             InsertSetting(connection, transaction, "PurchasePrefix", "PUR", "Prefix for auto-generated purchase numbers.", createdAt)
             InsertSetting(connection, transaction, "LowStockThreshold", "10", "Default low stock alert threshold.", createdAt)

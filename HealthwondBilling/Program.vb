@@ -17,6 +17,7 @@ Friend Module Program
 
         Try
             AppPaths.EnsureDirectories()
+            InvoiceTemplateGenerator.EnsureTemplateExists()
             AppLogger.Info("Healthwond Billing System is starting.")
 
             Dim connectionFactory As IDbConnectionFactory = New SqliteConnectionFactory(AppPaths.DatabaseFilePath)
@@ -36,8 +37,9 @@ Friend Module Program
             Dim supplierService As New SupplierService(supplierRepository)
             Dim billingService As New BillingService(invoiceRepository, customerRepository, productRepository)
             Dim purchaseService As New PurchaseService(purchaseRepository, supplierRepository, productRepository)
+            Dim invoiceExportService As New InvoiceExportService(invoiceRepository)
 
-            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService))
+            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService, invoiceExportService))
         Catch ex As Exception
             AppLogger.Error("Application bootstrap failed.", ex)
             MessageBox.Show(
