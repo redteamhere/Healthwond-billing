@@ -77,6 +77,44 @@ Namespace Utilities
             Directory.CreateDirectory(AssetsDirectory)
         End Sub
 
+        Public Shared Function ResolveConfiguredPath(configuredPath As String, fallbackAbsolutePath As String) As String
+            Dim normalizedPath As String = If(configuredPath, String.Empty).Trim()
+            If normalizedPath = String.Empty Then
+                Return fallbackAbsolutePath
+            End If
+
+            If Path.IsPathRooted(normalizedPath) Then
+                Return normalizedPath
+            End If
+
+            Return Path.GetFullPath(Path.Combine(BaseDirectory, normalizedPath))
+        End Function
+
+        Public Shared Function ToBaseRelativePath(pathValue As String) As String
+            Dim normalizedPath As String = If(pathValue, String.Empty).Trim()
+            If normalizedPath = String.Empty Then
+                Return String.Empty
+            End If
+
+            If Not Path.IsPathRooted(normalizedPath) Then
+                Return normalizedPath
+            End If
+
+            Dim baseDirectoryPath As String = BaseDirectory
+            If Not baseDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) Then
+                baseDirectoryPath &= Path.DirectorySeparatorChar
+            End If
+
+            Dim baseUri As New Uri(baseDirectoryPath, UriKind.Absolute)
+            Dim fileUri As New Uri(normalizedPath, UriKind.Absolute)
+
+            If baseUri.IsBaseOf(fileUri) Then
+                Return Uri.UnescapeDataString(baseUri.MakeRelativeUri(fileUri).ToString()).Replace("/"c, Path.DirectorySeparatorChar)
+            End If
+
+            Return normalizedPath
+        End Function
+
     End Class
 
 End Namespace

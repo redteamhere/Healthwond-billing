@@ -16,6 +16,7 @@ Namespace Forms
         Private ReadOnly _purchaseService As PurchaseService
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
+        Private ReadOnly _settingsService As SettingsService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -31,7 +32,7 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, settingsService As SettingsService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
@@ -40,6 +41,7 @@ Namespace Forms
             _purchaseService = purchaseService
             _invoiceExportService = invoiceExportService
             _reportService = reportService
+            _settingsService = settingsService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -112,7 +114,7 @@ Namespace Forms
                 .Height = 84,
                 .Font = New Font("Segoe UI", 9.25F, FontStyle.Regular),
                 .ForeColor = Color.FromArgb(207, 219, 232),
-                .Text = "Current build includes authentication, dashboard analytics, masters, billing, and live purchase stock-in workflows.",
+                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, and admin configuration management.",
                 .TextAlign = ContentAlignment.BottomLeft
             }
 
@@ -229,7 +231,8 @@ Namespace Forms
                     "- Billing now supports customer selection, product lines, GST totals, invoice save, and Excel/PDF export with print actions.",
                     "- Purchases now support supplier management, batch stock-in, ledger posting, and payable accumulation.",
                     "- Reports now support sales, purchases, GST, stock, receivables, and profit summary views.",
-                    "- Settings and deeper inventory views will follow in the next modules."),
+                    "- Settings now support company profile, prefixes, low-stock threshold, currency, and invoice template control.",
+                    "- Deeper inventory views will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -324,7 +327,8 @@ Namespace Forms
                         Return
                     End If
 
-                    ShowFutureModuleMessage("Settings")
+                    OpenSettingsDialog()
+                    Await RefreshSummaryAsync()
                 Case "Logout"
                     LogoutButton_Click(sender, e)
                 Case Else
@@ -352,6 +356,12 @@ Namespace Forms
 
         Private Sub OpenReportsDialog()
             Using form As New FrmReports(_reportService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenSettingsDialog()
+            Using form As New FrmSettings(_settingsService)
                 form.ShowDialog(Me)
             End Using
         End Sub

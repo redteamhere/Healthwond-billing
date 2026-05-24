@@ -8,8 +8,12 @@ Namespace Utilities
         Private Sub New()
         End Sub
 
-        Public Shared Sub EnsureTemplateExists()
-            If File.Exists(AppPaths.GstInvoiceTemplateFilePath) Then
+        Public Shared Sub EnsureTemplateExists(Optional templateFilePath As String = Nothing)
+            Dim targetPath As String = If(String.IsNullOrWhiteSpace(templateFilePath), AppPaths.GstInvoiceTemplateFilePath, templateFilePath)
+
+            Directory.CreateDirectory(Path.GetDirectoryName(targetPath))
+
+            If File.Exists(targetPath) Then
                 Return
             End If
 
@@ -65,7 +69,7 @@ Namespace Utilities
                 sheet.PageSetup.Margins.Right = 0.25
                 sheet.PageSetup.FitToPages(1, 0)
 
-                workbook.SaveAs(AppPaths.GstInvoiceTemplateFilePath)
+                workbook.SaveAs(targetPath)
             End Using
         End Sub
 

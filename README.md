@@ -4,7 +4,7 @@ Professional Windows desktop pharmaceutical billing and inventory software built
 
 ## Current module
 
-Modules 1 to 6 are complete:
+Modules 1 to 7 are complete:
 
 - Project scaffold with layered folders
 - SQLite schema bootstrap on first run
@@ -17,6 +17,7 @@ Modules 1 to 6 are complete:
 - Purchase workflow with supplier master maintenance, purchase numbering, batch-wise stock-in, stock ledger posting, and supplier outstanding updates
 - Invoice document workflow with generated Excel GST invoices, PDF export, print preview, instant print, and automatic template bootstrap
 - Reports workflow with live sales, purchase, GST, stock, outstanding, and profit summary views plus Excel export
+- Admin settings workflow with company profile, prefixes, low-stock threshold, currency, and configurable invoice template path management
 - Clean build through `dotnet build`
 
 ## Solution layout
@@ -48,4 +49,4 @@ dotnet run --project .\HealthwondBilling\HealthwondBilling.vbproj
 
 - Runtime data is stored under `%LocalAppData%\HealthwondBilling`
 - The detailed module README is in `HealthwondBilling/README.md`
-- Next modules will cover settings and deeper inventory views
+- Next modules will cover deeper inventory views and document history workflows

@@ -14,18 +14,22 @@ Namespace Services
     Public Class InvoiceExportService
 
         Private ReadOnly _invoiceRepository As IInvoiceRepository
+        Private ReadOnly _settingsRepository As ISettingsRepository
 
-        Public Sub New(invoiceRepository As IInvoiceRepository)
+        Public Sub New(invoiceRepository As IInvoiceRepository, settingsRepository As ISettingsRepository)
             _invoiceRepository = invoiceRepository
+            _settingsRepository = settingsRepository
         End Sub
 
         Public Async Function GenerateInvoiceFilesAsync(invoiceId As Integer) As Task(Of InvoiceExportResult)
             Return Await Task.Run(
                 Function()
                     Try
-                        InvoiceTemplateGenerator.EnsureTemplateExists()
+                        Dim settingsProfile As AppSettingsProfile = _settingsRepository.GetProfile()
+                        Dim templatePath As String = AppPaths.ResolveConfiguredPath(settingsProfile.InvoiceTemplatePath, AppPaths.GstInvoiceTemplateFilePath)
+                        InvoiceTemplateGenerator.EnsureTemplateExists(templatePath)
                         Dim document As InvoiceDocument = _invoiceRepository.GetInvoiceDocument(invoiceId)
-                        Dim excelFilePath As String = GenerateExcelInvoice(document)
+                        Dim excelFilePath As String = GenerateExcelInvoice(document, templatePath)
                         Dim pdfFilePath As String = GeneratePdfInvoice(document)
                         Return InvoiceExportResult.Success($"Invoice {document.InvoiceNumber} exported successfully.", excelFilePath, pdfFilePath)
                     Catch ex As Exception
@@ -61,10 +65,10 @@ Namespace Services
             })
         End Sub
 
-        Private Function GenerateExcelInvoice(document As InvoiceDocument) As String
+        Private Function GenerateExcelInvoice(document As InvoiceDocument, templatePath As String) As String
             Dim filePath As String = Path.Combine(AppPaths.GeneratedInvoicesDirectory, $"{document.InvoiceNumber}.xlsx")
 
-            Using workbook As New XLWorkbook(AppPaths.GstInvoiceTemplateFilePath)
+            Using workbook As New XLWorkbook(templatePath)
                 Dim sheet As IXLWorksheet = workbook.Worksheet("Invoice")
                 sheet.Cell("A1").Value = document.CompanyName
                 sheet.Cell("A4").Value = "Seller"
