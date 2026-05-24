@@ -1,0 +1,20 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio / user state
+.vs/
+*.user
+*.suo
+*.cache
+
+# Logs and local data
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+# OS files
+Thumbs.db
+Desktop.ini
+
