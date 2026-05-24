@@ -11,6 +11,7 @@ Namespace Forms
         Private ReadOnly _dashboardService As DashboardService
         Private ReadOnly _productService As ProductService
         Private ReadOnly _customerService As CustomerService
+        Private ReadOnly _billingService As BillingService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -26,10 +27,11 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, billingService As BillingService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
+            _billingService = billingService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -216,7 +218,8 @@ Namespace Forms
                     "- Authentication is active with hashed passwords and role-aware sessions.",
                     "- Product master supports search, CRUD, barcode, pricing, GST, expiry, and stock adjustments.",
                     "- Customer master supports search, CRUD, contact details, GSTINs, license numbers, and dues.",
-                    "- Billing, purchases, reports, invoice generation, and printing will be added in the next modules."),
+                    "- Billing now supports customer selection, product lines, GST totals, and invoice save with stock deduction.",
+                    "- Purchases, reports, invoice template export, and printing will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -295,6 +298,9 @@ Namespace Forms
                 Case "Customers"
                     OpenCustomersDialog()
                     Await RefreshSummaryAsync()
+                Case "Billing"
+                    OpenBillingDialog()
+                    Await RefreshSummaryAsync()
                 Case "Refresh"
                     Await RefreshSummaryAsync()
                 Case "Settings"
@@ -313,6 +319,12 @@ Namespace Forms
 
         Private Sub OpenProductsDialog()
             Using form As New FrmProducts(_productService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenBillingDialog()
+            Using form As New FrmBilling(_billingService)
                 form.ShowDialog(Me)
             End Using
         End Sub
@@ -357,7 +369,7 @@ Namespace Forms
         Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
             Select Case keyData
                 Case Keys.F1
-                    ShowFutureModuleMessage("Billing")
+                    OpenBillingDialog()
                     Return True
                 Case Keys.F2
                     OpenProductsDialog()

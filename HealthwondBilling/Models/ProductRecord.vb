@@ -18,6 +18,10 @@ Namespace Models
         Public Property IsDeleted As Boolean
         Public Property CreatedAt As DateTime?
         Public Property UpdatedAt As DateTime?
+
+        Public Overrides Function ToString() As String
+            Return $"{ProductName} | Batch {BatchNumber} | Stock {CurrentStock}"
+        End Function
     End Class
 
 End Namespace

@@ -11,6 +11,10 @@ Namespace Models
         Public Property OutstandingBalance As Decimal
         Public Property CreatedAt As DateTime?
         Public Property UpdatedAt As DateTime?
+
+        Public Overrides Function ToString() As String
+            Return $"{CustomerName} | {Phone}"
+        End Function
     End Class
 
 End Namespace
