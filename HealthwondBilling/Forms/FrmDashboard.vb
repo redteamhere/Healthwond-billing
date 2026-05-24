@@ -16,6 +16,7 @@ Namespace Forms
         Private ReadOnly _purchaseService As PurchaseService
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
+        Private ReadOnly _inventoryService As InventoryService
         Private ReadOnly _settingsService As SettingsService
         Private ReadOnly _clockTimer As Timer
 
@@ -32,7 +33,7 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, settingsService As SettingsService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, settingsService As SettingsService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
@@ -41,6 +42,7 @@ Namespace Forms
             _purchaseService = purchaseService
             _invoiceExportService = invoiceExportService
             _reportService = reportService
+            _inventoryService = inventoryService
             _settingsService = settingsService
 
             Text = "Healthwond Billing System - Dashboard"
@@ -101,6 +103,7 @@ Namespace Forms
             navPanel.Controls.Add(CreateSidebarButton("F4  Purchases", "Purchases"))
             navPanel.Controls.Add(CreateSidebarButton("F5  Refresh Metrics", "Refresh"))
             navPanel.Controls.Add(CreateSidebarButton("F6  Reports", "Reports"))
+            navPanel.Controls.Add(CreateSidebarButton("F7  Inventory", "Inventory"))
 
             btnSettings = CreateSidebarButton("Admin  Settings", "Settings")
             navPanel.Controls.Add(btnSettings)
@@ -114,7 +117,7 @@ Namespace Forms
                 .Height = 84,
                 .Font = New Font("Segoe UI", 9.25F, FontStyle.Regular),
                 .ForeColor = Color.FromArgb(207, 219, 232),
-                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, and admin configuration management.",
+                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, inventory oversight, and admin configuration management.",
                 .TextAlign = ContentAlignment.BottomLeft
             }
 
@@ -231,8 +234,9 @@ Namespace Forms
                     "- Billing now supports customer selection, product lines, GST totals, invoice save, and Excel/PDF export with print actions.",
                     "- Purchases now support supplier management, batch stock-in, ledger posting, and payable accumulation.",
                     "- Reports now support sales, purchases, GST, stock, receivables, and profit summary views.",
+                    "- Inventory now supports current stock, batch stock, expiry watchlists, low stock review, and ledger history export.",
                     "- Settings now support company profile, prefixes, low-stock threshold, currency, and invoice template control.",
-                    "- Deeper inventory views will follow in the next modules."),
+                    "- Document history and return workflows will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -321,6 +325,8 @@ Namespace Forms
                     Await RefreshSummaryAsync()
                 Case "Reports"
                     OpenReportsDialog()
+                Case "Inventory"
+                    OpenInventoryDialog()
                 Case "Settings"
                     If Not SessionManager.IsAdmin Then
                         MessageBox.Show("Settings access is limited to administrator accounts.", "Access Restricted", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -356,6 +362,12 @@ Namespace Forms
 
         Private Sub OpenReportsDialog()
             Using form As New FrmReports(_reportService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenInventoryDialog()
+            Using form As New FrmInventory(_inventoryService)
                 form.ShowDialog(Me)
             End Using
         End Sub
@@ -425,6 +437,9 @@ Namespace Forms
                     Return True
                 Case Keys.F6
                     OpenReportsDialog()
+                    Return True
+                Case Keys.F7
+                    OpenInventoryDialog()
                     Return True
             End Select
 

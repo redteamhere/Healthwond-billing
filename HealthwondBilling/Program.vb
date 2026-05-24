@@ -31,6 +31,7 @@ Friend Module Program
             Dim invoiceRepository As New InvoiceRepository(connectionFactory)
             Dim purchaseRepository As New PurchaseRepository(connectionFactory)
             Dim reportRepository As New ReportRepository(connectionFactory)
+            Dim inventoryRepository As New InventoryRepository(connectionFactory)
             Dim settingsRepository As New SettingsRepository(connectionFactory)
             Dim authService As New AuthService(userRepository)
             Dim dashboardService As New DashboardService(connectionFactory)
@@ -40,12 +41,13 @@ Friend Module Program
             Dim billingService As New BillingService(invoiceRepository, customerRepository, productRepository)
             Dim purchaseService As New PurchaseService(purchaseRepository, supplierRepository, productRepository)
             Dim reportService As New ReportService(reportRepository)
+            Dim inventoryService As New InventoryService(inventoryRepository)
             Dim settingsService As New SettingsService(settingsRepository)
             Dim settingsProfile As AppSettingsProfile = settingsRepository.GetProfile()
             InvoiceTemplateGenerator.EnsureTemplateExists(settingsService.GetResolvedTemplatePath(settingsProfile))
             Dim invoiceExportService As New InvoiceExportService(invoiceRepository, settingsRepository)
 
-            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService, invoiceExportService, reportService, settingsService))
+            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService, invoiceExportService, reportService, inventoryService, settingsService))
         Catch ex As Exception
             AppLogger.Error("Application bootstrap failed.", ex)
             MessageBox.Show(

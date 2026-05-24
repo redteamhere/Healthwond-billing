@@ -17,6 +17,7 @@ Namespace Forms
         Private ReadOnly _purchaseService As PurchaseService
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
+        Private ReadOnly _inventoryService As InventoryService
         Private ReadOnly _settingsService As SettingsService
 
         Private ReadOnly txtUsername As TextBox
@@ -26,7 +27,7 @@ Namespace Forms
         Private ReadOnly btnExit As Button
         Private ReadOnly lblStatus As Label
 
-        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, settingsService As SettingsService)
+        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, settingsService As SettingsService)
             _authService = authService
             _dashboardService = dashboardService
             _productService = productService
@@ -36,6 +37,7 @@ Namespace Forms
             _purchaseService = purchaseService
             _invoiceExportService = invoiceExportService
             _reportService = reportService
+            _inventoryService = inventoryService
             _settingsService = settingsService
 
             Text = "Healthwond Billing System - Login"
@@ -115,7 +117,7 @@ Namespace Forms
             pointsPanel.Controls.Add(CreateFeatureLabel("Role-based authentication for admin and staff users"))
             pointsPanel.Controls.Add(CreateFeatureLabel("SQLite schema bootstrap with secure seeded sample data"))
             pointsPanel.Controls.Add(CreateFeatureLabel("Dashboard metrics for sales, stock, expiry, low stock, and dues"))
-            pointsPanel.Controls.Add(CreateFeatureLabel("Future-ready structure for billing, purchase, reporting, and template workflows"))
+            pointsPanel.Controls.Add(CreateFeatureLabel("Live modules for billing, purchases, reports, settings, and inventory oversight"))
 
             Dim credentialsLabel As New Label With {
                 .Dock = DockStyle.Bottom,
@@ -310,7 +312,7 @@ Namespace Forms
 
                 SessionManager.StartSession(result.User)
 
-                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _invoiceExportService, _reportService, _settingsService)
+                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _invoiceExportService, _reportService, _inventoryService, _settingsService)
                     Hide()
                     dashboard.ShowDialog(Me)
 
