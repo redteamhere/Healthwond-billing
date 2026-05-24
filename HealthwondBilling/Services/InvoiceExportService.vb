@@ -65,8 +65,29 @@ Namespace Services
             })
         End Sub
 
+        Public Function GetExcelFilePath(invoiceNumber As String) As String
+            Return Path.Combine(AppPaths.GeneratedInvoicesDirectory, $"{invoiceNumber}.xlsx")
+        End Function
+
+        Public Function GetPdfFilePath(invoiceNumber As String) As String
+            Return Path.Combine(AppPaths.GeneratedInvoicesDirectory, $"{invoiceNumber}.pdf")
+        End Function
+
+        Public Sub OpenGeneratedInvoiceFile(invoiceNumber As String, openPdf As Boolean)
+            Dim filePath As String = If(openPdf, GetPdfFilePath(invoiceNumber), GetExcelFilePath(invoiceNumber))
+
+            If Not File.Exists(filePath) Then
+                Throw New FileNotFoundException("The requested invoice file was not found.", filePath)
+            End If
+
+            Process.Start(New ProcessStartInfo With {
+                .FileName = filePath,
+                .UseShellExecute = True
+            })
+        End Sub
+
         Private Function GenerateExcelInvoice(document As InvoiceDocument, templatePath As String) As String
-            Dim filePath As String = Path.Combine(AppPaths.GeneratedInvoicesDirectory, $"{document.InvoiceNumber}.xlsx")
+            Dim filePath As String = GetExcelFilePath(document.InvoiceNumber)
 
             Using workbook As New XLWorkbook(templatePath)
                 Dim sheet As IXLWorksheet = workbook.Worksheet("Invoice")
@@ -149,7 +170,7 @@ Namespace Services
         End Function
 
         Private Function GeneratePdfInvoice(document As InvoiceDocument) As String
-            Dim filePath As String = Path.Combine(AppPaths.GeneratedInvoicesDirectory, $"{document.InvoiceNumber}.pdf")
+            Dim filePath As String = GetPdfFilePath(document.InvoiceNumber)
             Dim pdfDocument As New PdfDocument()
             pdfDocument.Info.Title = $"Invoice {document.InvoiceNumber}"
 

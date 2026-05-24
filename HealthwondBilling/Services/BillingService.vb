@@ -30,6 +30,19 @@ Namespace Services
             Return Await Task.Run(Function() _invoiceRepository.GenerateNextInvoiceNumber(invoiceDate))
         End Function
 
+        Public Async Function LoadInvoiceHistoryAsync(fromDate As DateTime, toDate As DateTime, searchTerm As String) As Task(Of List(Of InvoiceHistoryRow))
+            Dim safeSearchTerm As String = If(searchTerm, String.Empty).Trim()
+            Return Await Task.Run(Function() _invoiceRepository.SearchInvoices(fromDate.Date, toDate.Date, safeSearchTerm))
+        End Function
+
+        Public Async Function GetInvoiceDraftAsync(invoiceId As Integer) As Task(Of BillingInvoiceDraft)
+            Return Await Task.Run(Function() _invoiceRepository.LoadInvoiceDraft(invoiceId))
+        End Function
+
+        Public Async Function GetInvoiceDocumentAsync(invoiceId As Integer) As Task(Of InvoiceDocument)
+            Return Await Task.Run(Function() _invoiceRepository.GetInvoiceDocument(invoiceId))
+        End Function
+
         Public Function CreateLineFromProduct(product As ProductRecord) As BillingLineItem
             Dim line As New BillingLineItem With {
                 .ProductId = product.Id,
@@ -111,9 +124,20 @@ Namespace Services
                     draft.Summary = CalculateTotals(draft.Items, draft.AmountPaid)
 
                     Try
-                        Dim invoiceId As Integer = _invoiceRepository.SaveInvoice(draft, createdByUserId)
-                        AppLogger.Info($"Invoice '{draft.InvoiceNumber}' saved with Id {invoiceId}.")
-                        Return InvoiceSaveResult.Success(invoiceId, draft.InvoiceNumber, $"Invoice {draft.InvoiceNumber} saved successfully.")
+                        Dim invoiceId As Integer
+                        Dim successMessage As String
+
+                        If draft.InvoiceId > 0 Then
+                            invoiceId = _invoiceRepository.UpdateInvoice(draft, createdByUserId)
+                            successMessage = $"Invoice {draft.InvoiceNumber} updated successfully."
+                            AppLogger.Info($"Invoice '{draft.InvoiceNumber}' updated with Id {invoiceId}.")
+                        Else
+                            invoiceId = _invoiceRepository.SaveInvoice(draft, createdByUserId)
+                            successMessage = $"Invoice {draft.InvoiceNumber} saved successfully."
+                            AppLogger.Info($"Invoice '{draft.InvoiceNumber}' saved with Id {invoiceId}.")
+                        End If
+
+                        Return InvoiceSaveResult.Success(invoiceId, draft.InvoiceNumber, successMessage)
                     Catch ex As Exception
                         AppLogger.Error($"Invoice save failed for '{draft.InvoiceNumber}'.", ex)
                         Return InvoiceSaveResult.Failure(ex.Message)

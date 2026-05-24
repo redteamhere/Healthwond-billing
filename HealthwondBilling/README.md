@@ -1,6 +1,6 @@
 # Healthwond Billing System
 
-Modules 1 to 8 deliver the foundation, SQLite bootstrap, authentication, dashboard shell, seeded sample data, master-data screens, billing, purchase entry, invoice export/print workflows, reporting, live admin settings management, and a dedicated inventory workspace.
+Modules 1 to 9 deliver the foundation, SQLite bootstrap, authentication, dashboard shell, seeded sample data, master-data screens, billing, purchase entry, invoice export/print workflows, reporting, live admin settings management, a dedicated inventory workspace, and persisted invoice history management.
 
 ## Current scope
 
@@ -19,6 +19,7 @@ Modules 1 to 8 deliver the foundation, SQLite bootstrap, authentication, dashboa
 - Reports screen with date-filtered sales, purchases, GST, stock, customer outstanding, and estimated profit views plus Excel export to `%LocalAppData%\HealthwondBilling\Reports`
 - Settings screen for company identity, prefixes, currency symbol, low stock threshold, and configurable invoice template path with template bootstrap support
 - Inventory screen for current stock, batch stock, expiry watchlists, low stock alerts, stock-ledger history, and Excel export
+- Invoice history screen for saved invoice search, reopen-for-edit, re-export, print preview, instant print, and generated document access
 
 ## Default demo credentials
 
@@ -49,6 +50,6 @@ dotnet run --project .\HealthwondBilling\HealthwondBilling.vbproj
 
 ## Next modules
 
-1. Invoice edit/reprint history and document management
-2. Purchase return and stock adjustment workflows
-3. Payment collection and payable settlement workflows
+1. Purchase return and stock adjustment workflows
+2. Payment collection and payable settlement workflows
+3. Advanced analytics and settlement aging views

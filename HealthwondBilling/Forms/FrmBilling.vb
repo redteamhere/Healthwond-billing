@@ -12,9 +12,11 @@ Namespace Forms
         Private ReadOnly _billingService As BillingService
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _invoiceItems As New BindingList(Of BillingLineItem)()
+        Private ReadOnly _invoiceIdToEdit As Integer
         Private _customers As New List(Of CustomerRecord)()
         Private _products As New List(Of ProductRecord)()
         Private _isBusy As Boolean
+        Private _editingInvoiceId As Integer
         Private _lastSavedInvoiceId As Integer
         Private _lastSavedInvoiceNumber As String = String.Empty
 
@@ -51,9 +53,10 @@ Namespace Forms
         Private ReadOnly lblBalanceValue As New Label()
         Private ReadOnly txtTaxSummary As New TextBox()
 
-        Public Sub New(billingService As BillingService, invoiceExportService As InvoiceExportService)
+        Public Sub New(billingService As BillingService, invoiceExportService As InvoiceExportService, Optional invoiceIdToEdit As Integer = 0)
             _billingService = billingService
             _invoiceExportService = invoiceExportService
+            _invoiceIdToEdit = Math.Max(invoiceIdToEdit, 0)
 
             Text = "Healthwond Billing System - Billing"
             StartPosition = FormStartPosition.CenterParent
@@ -111,7 +114,7 @@ Namespace Forms
 
             Dim subtitle As New Label With {
                 .Dock = DockStyle.Fill,
-                .Text = "Create GST invoices with customer selection, product lines, discounts, free quantity schemes, live tax totals, and stock deduction on save.",
+                .Text = "Create or update GST invoices with customer selection, product lines, discounts, free quantity schemes, live tax totals, and stock deduction on save.",
                 .Font = New Font("Segoe UI", 10.5F, FontStyle.Regular),
                 .ForeColor = ThemePalette.TextMuted
             }
@@ -440,16 +443,25 @@ Namespace Forms
         End Sub
 
         Private Async Sub FrmBilling_Load(sender As Object, e As EventArgs)
+            If _invoiceIdToEdit > 0 Then
+                Await LoadInvoiceForEditAsync(_invoiceIdToEdit)
+                Return
+            End If
+
             Await LoadLookupsAsync()
             Await PrepareNewInvoiceAsync()
         End Sub
 
-        Private Async Function LoadLookupsAsync() As Task
+        Private Async Function LoadLookupsAsync(Optional editingDraft As BillingInvoiceDraft = Nothing) As Task
             SetBusy(True, "Loading billing lookups...")
 
             Try
                 _customers = Await _billingService.LoadCustomersAsync()
                 _products = Await _billingService.LoadProductsAsync()
+
+                 If editingDraft IsNot Nothing Then
+                    ApplyEditStockAllowance(editingDraft)
+                End If
 
                 cboCustomer.DataSource = Nothing
                 cboCustomer.DataSource = _customers
@@ -469,6 +481,9 @@ Namespace Forms
         End Function
 
         Private Async Function PrepareNewInvoiceAsync() As Task
+            _editingInvoiceId = 0
+            _lastSavedInvoiceId = 0
+            _lastSavedInvoiceNumber = String.Empty
             _invoiceItems.Clear()
             txtNotes.Clear()
             nudAmountPaid.Value = 0D
@@ -479,11 +494,125 @@ Namespace Forms
             cboProduct.SelectedIndex = -1
 
             txtInvoiceNumber.Text = Await _billingService.GenerateNextInvoiceNumberAsync(dtpInvoiceDate.Value.Date)
+            SetEditMode(False)
             ReindexLines()
             RefreshTotals()
             UpdateExportActionState()
             ShowStatus("Ready to create a new invoice.", False)
         End Function
+
+        Private Async Function LoadInvoiceForEditAsync(invoiceId As Integer) As Task
+            Dim loadFailed As Boolean = False
+
+            SetBusy(True, "Loading invoice for edit...")
+
+            Try
+                Dim draft As BillingInvoiceDraft = Await _billingService.GetInvoiceDraftAsync(invoiceId)
+                Await LoadLookupsAsync(draft)
+                BindDraft(draft)
+                ShowStatus($"Invoice {draft.InvoiceNumber} loaded for edit.", False)
+            Catch ex As Exception
+                AppLogger.Error($"Invoice edit load failed for Id {invoiceId}.", ex)
+                loadFailed = True
+            End Try
+
+            SetBusy(False)
+
+            If loadFailed Then
+                Await LoadLookupsAsync()
+                Await PrepareNewInvoiceAsync()
+                ShowStatus("The requested invoice could not be loaded for edit.", True)
+            End If
+        End Function
+
+        Private Sub ApplyEditStockAllowance(draft As BillingInvoiceDraft)
+            Dim restoredQuantities = draft.Items.
+                GroupBy(Function(item) item.ProductId).
+                ToDictionary(Function(group) group.Key, Function(group) group.Sum(Function(item) item.Quantity + item.FreeQuantity))
+
+            For Each product As ProductRecord In _products
+                If restoredQuantities.ContainsKey(product.Id) Then
+                    product.CurrentStock += restoredQuantities(product.Id)
+                End If
+            Next
+        End Sub
+
+        Private Sub BindDraft(draft As BillingInvoiceDraft)
+            _editingInvoiceId = draft.InvoiceId
+            _lastSavedInvoiceId = draft.InvoiceId
+            _lastSavedInvoiceNumber = draft.InvoiceNumber
+
+            txtInvoiceNumber.Text = draft.InvoiceNumber
+            dtpInvoiceDate.Value = If(draft.InvoiceDate < dtpInvoiceDate.MinDate, dtpInvoiceDate.MinDate, draft.InvoiceDate)
+            txtNotes.Text = draft.Notes
+            nudAmountPaid.Value = Math.Min(nudAmountPaid.Maximum, Math.Max(draft.AmountPaid, nudAmountPaid.Minimum))
+
+            SelectCustomerById(draft.CustomerId)
+            SelectPaymentMode(draft.PaymentMode)
+
+            _invoiceItems.Clear()
+            For Each line As BillingLineItem In draft.Items
+                _invoiceItems.Add(New BillingLineItem With {
+                    .LineNumber = line.LineNumber,
+                    .ProductId = line.ProductId,
+                    .ProductName = line.ProductName,
+                    .BatchNumber = line.BatchNumber,
+                    .ExpiryDate = line.ExpiryDate,
+                    .Packing = line.Packing,
+                    .Barcode = line.Barcode,
+                    .AvailableStock = line.AvailableStock,
+                    .Quantity = line.Quantity,
+                    .FreeQuantity = line.FreeQuantity,
+                    .Rate = line.Rate,
+                    .PTR = line.PTR,
+                    .MRP = line.MRP,
+                    .DiscountPercentage = line.DiscountPercentage,
+                    .DiscountAmount = line.DiscountAmount,
+                    .SchemeDescription = line.SchemeDescription,
+                    .GstPercentage = line.GstPercentage,
+                    .TaxableAmount = line.TaxableAmount,
+                    .GstAmount = line.GstAmount,
+                    .LineTotal = line.LineTotal
+                })
+            Next
+
+            SetEditMode(True)
+            ReindexLines()
+            RefreshTotals()
+            UpdateExportActionState()
+        End Sub
+
+        Private Sub SelectCustomerById(customerId As Integer)
+            For index As Integer = 0 To cboCustomer.Items.Count - 1
+                Dim customer As CustomerRecord = TryCast(cboCustomer.Items(index), CustomerRecord)
+                If customer IsNot Nothing AndAlso customer.Id = customerId Then
+                    cboCustomer.SelectedIndex = index
+                    Exit For
+                End If
+            Next
+        End Sub
+
+        Private Sub SelectPaymentMode(paymentMode As String)
+            Dim targetMode As String = If(paymentMode, String.Empty).Trim()
+            If targetMode = String.Empty Then
+                cboPaymentMode.SelectedIndex = 0
+                Return
+            End If
+
+            Dim existingMode As Object = cboPaymentMode.Items.Cast(Of Object)().
+                FirstOrDefault(Function(item) String.Equals(Convert.ToString(item), targetMode, StringComparison.OrdinalIgnoreCase))
+
+            If existingMode IsNot Nothing Then
+                cboPaymentMode.SelectedItem = existingMode
+            Else
+                cboPaymentMode.Text = targetMode
+            End If
+        End Sub
+
+        Private Sub SetEditMode(isEditMode As Boolean)
+            btnSaveInvoice.Text = If(isEditMode, "Update Invoice", "Save Invoice")
+            btnNewInvoice.Text = If(isEditMode, "New Invoice", "New Invoice")
+        End Sub
 
         Private Sub btnAddItem_Click(sender As Object, e As EventArgs)
             Dim product As ProductRecord = TryCast(cboProduct.SelectedItem, ProductRecord)
@@ -548,6 +677,7 @@ Namespace Forms
         Private Async Sub btnSaveInvoice_Click(sender As Object, e As EventArgs)
             Dim customer As CustomerRecord = TryCast(cboCustomer.SelectedItem, CustomerRecord)
             Dim draft As New BillingInvoiceDraft With {
+                .InvoiceId = _editingInvoiceId,
                 .InvoiceNumber = txtInvoiceNumber.Text,
                 .InvoiceDate = dtpInvoiceDate.Value.Date,
                 .CustomerId = If(customer Is Nothing, 0, customer.Id),
@@ -562,6 +692,7 @@ Namespace Forms
             Next
 
             draft.Summary = _billingService.CalculateTotals(draft.Items, draft.AmountPaid)
+            Dim isEditing As Boolean = _editingInvoiceId > 0
 
             SetBusy(True, "Saving invoice...")
             Dim result As InvoiceSaveResult = Await _billingService.SaveInvoiceAsync(draft, If(SessionManager.CurrentUser Is Nothing, 0, SessionManager.CurrentUser.Id))
@@ -577,9 +708,12 @@ Namespace Forms
             Dim exportResult As InvoiceExportResult = Await _invoiceExportService.GenerateInvoiceFilesAsync(result.InvoiceId)
             SetBusy(False)
 
-            Await LoadLookupsAsync()
-            Await PrepareNewInvoiceAsync()
-            UpdateExportActionState()
+            If isEditing Then
+                Await LoadInvoiceForEditAsync(result.InvoiceId)
+            Else
+                Await LoadLookupsAsync()
+                Await PrepareNewInvoiceAsync()
+            End If
 
             If exportResult.IsSuccess Then
                 ShowStatus($"{result.Message} Excel and PDF generated.", False)
@@ -667,7 +801,7 @@ Namespace Forms
         End Sub
 
         Private Async Sub dtpInvoiceDate_ValueChanged(sender As Object, e As EventArgs)
-            If _invoiceItems.Count = 0 AndAlso Not _isBusy Then
+            If _editingInvoiceId = 0 AndAlso _invoiceItems.Count = 0 AndAlso Not _isBusy Then
                 txtInvoiceNumber.Text = Await _billingService.GenerateNextInvoiceNumberAsync(dtpInvoiceDate.Value.Date)
             End If
         End Sub
