@@ -24,10 +24,14 @@ Friend Module Program
             bootstrapper.Initialize()
 
             Dim userRepository As New UserRepository(connectionFactory)
+            Dim productRepository As New ProductRepository(connectionFactory)
+            Dim customerRepository As New CustomerRepository(connectionFactory)
             Dim authService As New AuthService(userRepository)
             Dim dashboardService As New DashboardService(connectionFactory)
+            Dim productService As New ProductService(productRepository)
+            Dim customerService As New CustomerService(customerRepository)
 
-            Application.Run(New FrmLogin(authService, dashboardService))
+            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService))
         Catch ex As Exception
             AppLogger.Error("Application bootstrap failed.", ex)
             MessageBox.Show(

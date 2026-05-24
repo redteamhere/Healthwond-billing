@@ -9,6 +9,8 @@ Namespace Forms
         Inherits Form
 
         Private ReadOnly _dashboardService As DashboardService
+        Private ReadOnly _productService As ProductService
+        Private ReadOnly _customerService As CustomerService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -24,8 +26,10 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService)
             _dashboardService = dashboardService
+            _productService = productService
+            _customerService = customerService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -98,7 +102,7 @@ Namespace Forms
                 .Height = 84,
                 .Font = New Font("Segoe UI", 9.25F, FontStyle.Regular),
                 .ForeColor = Color.FromArgb(207, 219, 232),
-                .Text = "Current build contains the foundation, authentication, dashboard, and seeded master data.",
+                .Text = "Current build contains the foundation plus live product and customer master management.",
                 .TextAlign = ContentAlignment.BottomLeft
             }
 
@@ -210,9 +214,9 @@ Namespace Forms
                 .Text = String.Join(
                     Environment.NewLine,
                     "- Authentication is active with hashed passwords and role-aware sessions.",
-                    "- The SQLite schema auto-creates on first run with reusable sample master data.",
-                    "- Dashboard metrics are live against the local database.",
-                    "- Product master, billing grid, purchase entry, reports, and printing will be added in the next modules."),
+                    "- Product master supports search, CRUD, barcode, pricing, GST, expiry, and stock adjustments.",
+                    "- Customer master supports search, CRUD, contact details, GSTINs, license numbers, and dues.",
+                    "- Billing, purchases, reports, invoice generation, and printing will be added in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -285,6 +289,12 @@ Namespace Forms
             Dim tagValue As String = Convert.ToString(button.Tag)
 
             Select Case tagValue
+                Case "Products"
+                    OpenProductsDialog()
+                    Await RefreshSummaryAsync()
+                Case "Customers"
+                    OpenCustomersDialog()
+                    Await RefreshSummaryAsync()
                 Case "Refresh"
                     Await RefreshSummaryAsync()
                 Case "Settings"
@@ -299,6 +309,18 @@ Namespace Forms
                 Case Else
                     ShowFutureModuleMessage(tagValue)
             End Select
+        End Sub
+
+        Private Sub OpenProductsDialog()
+            Using form As New FrmProducts(_productService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenCustomersDialog()
+            Using form As New FrmCustomers(_customerService)
+                form.ShowDialog(Me)
+            End Using
         End Sub
 
         Private Sub ShowFutureModuleMessage(moduleName As String)
@@ -338,10 +360,10 @@ Namespace Forms
                     ShowFutureModuleMessage("Billing")
                     Return True
                 Case Keys.F2
-                    ShowFutureModuleMessage("Products")
+                    OpenProductsDialog()
                     Return True
                 Case Keys.F3
-                    ShowFutureModuleMessage("Customers")
+                    OpenCustomersDialog()
                     Return True
                 Case Keys.F4
                     ShowFutureModuleMessage("Purchases")

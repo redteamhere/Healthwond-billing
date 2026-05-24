@@ -1,6 +1,6 @@
 # Healthwond Billing System
 
-Module 1 delivers the project foundation, SQLite bootstrap, authentication, dashboard shell, and sample data.
+Modules 1 and 2 deliver the foundation, SQLite bootstrap, authentication, dashboard shell, seeded sample data, and the first live master-data screens.
 
 ## Current scope
 
@@ -11,6 +11,8 @@ Module 1 delivers the project foundation, SQLite bootstrap, authentication, dash
 - Role-based authentication for `Admin` and `Staff`
 - Dashboard metrics for today's sales, total stock, expiry alerts, low stock alerts, and pending payments
 - Seeded sample users, customers, suppliers, products, and stock ledger rows
+- Product master with searchable CRUD, stock-safe adjustments, barcode, GST, and pricing fields
+- Customer master with searchable CRUD, GSTIN, drug license, address, contact data, and dues
 
 ## Default demo credentials
 
@@ -40,8 +42,7 @@ dotnet run --project .\HealthwondBilling\HealthwondBilling.vbproj
 
 ## Next modules
 
-1. Product and customer master forms
-2. Billing workflow with grid entry and GST calculations
-3. Purchase module and stock ledger updates
-4. ClosedXML invoice generation and print/PDF flows
-5. Reports and settings screens
+1. Billing workflow with grid entry and GST calculations
+2. Purchase module and stock ledger updates
+3. ClosedXML invoice generation and print/PDF flows
+4. Reports and settings screens

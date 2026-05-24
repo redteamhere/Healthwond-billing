@@ -26,6 +26,43 @@ Namespace Utilities
             button.Height = 44
         End Sub
 
+        Public Shared Sub StyleDangerButton(button As Button)
+            button.FlatStyle = FlatStyle.Flat
+            button.FlatAppearance.BorderSize = 0
+            button.BackColor = ThemePalette.DangerRed
+            button.ForeColor = Color.White
+            button.Cursor = Cursors.Hand
+            button.Font = New Font("Segoe UI Semibold", 10.0F, FontStyle.Bold)
+            button.Height = 44
+        End Sub
+
+        Public Shared Sub StyleDataGrid(grid As DataGridView)
+            grid.BackgroundColor = Color.White
+            grid.BorderStyle = BorderStyle.None
+            grid.AutoGenerateColumns = False
+            grid.AllowUserToAddRows = False
+            grid.AllowUserToDeleteRows = False
+            grid.AllowUserToResizeRows = False
+            grid.MultiSelect = False
+            grid.ReadOnly = True
+            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            grid.RowHeadersVisible = False
+            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+            grid.EnableHeadersVisualStyles = False
+            grid.ColumnHeadersHeight = 40
+            grid.ColumnHeadersDefaultCellStyle.BackColor = ThemePalette.BrandBlue
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+            grid.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI Semibold", 10.0F, FontStyle.Bold)
+            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(216, 229, 255)
+            grid.DefaultCellStyle.SelectionForeColor = ThemePalette.TextPrimary
+            grid.DefaultCellStyle.BackColor = Color.White
+            grid.DefaultCellStyle.ForeColor = ThemePalette.TextPrimary
+            grid.DefaultCellStyle.Font = New Font("Segoe UI", 9.75F, FontStyle.Regular)
+            grid.RowsDefaultCellStyle.BackColor = Color.White
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(247, 249, 252)
+            grid.GridColor = Color.FromArgb(230, 233, 240)
+        End Sub
+
         Public Shared Sub StyleInput(textBox As TextBox)
             textBox.Font = New Font("Segoe UI", 10.5F, FontStyle.Regular)
             textBox.Margin = New Padding(0)
