@@ -18,6 +18,7 @@ Namespace Forms
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
         Private ReadOnly _inventoryService As InventoryService
+        Private ReadOnly _stockOperationService As StockOperationService
         Private ReadOnly _settingsService As SettingsService
 
         Private ReadOnly txtUsername As TextBox
@@ -27,7 +28,7 @@ Namespace Forms
         Private ReadOnly btnExit As Button
         Private ReadOnly lblStatus As Label
 
-        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, settingsService As SettingsService)
+        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settingsService As SettingsService)
             _authService = authService
             _dashboardService = dashboardService
             _productService = productService
@@ -38,6 +39,7 @@ Namespace Forms
             _invoiceExportService = invoiceExportService
             _reportService = reportService
             _inventoryService = inventoryService
+            _stockOperationService = stockOperationService
             _settingsService = settingsService
 
             Text = "Healthwond Billing System - Login"
@@ -312,7 +314,7 @@ Namespace Forms
 
                 SessionManager.StartSession(result.User)
 
-                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _invoiceExportService, _reportService, _inventoryService, _settingsService)
+                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _invoiceExportService, _reportService, _inventoryService, _stockOperationService, _settingsService)
                     Hide()
                     dashboard.ShowDialog(Me)
 

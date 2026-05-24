@@ -96,6 +96,42 @@ CREATE TABLE IF NOT EXISTS PurchaseItems (
     FOREIGN KEY (ProductId) REFERENCES Products(Id)
 );
 
+CREATE TABLE IF NOT EXISTS PurchaseReturns (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ReturnNumber TEXT NOT NULL UNIQUE,
+    PurchaseId INTEGER NOT NULL,
+    SupplierId INTEGER NOT NULL,
+    ReturnDate TEXT NOT NULL,
+    SubTotal NUMERIC NOT NULL DEFAULT 0,
+    GstAmount NUMERIC NOT NULL DEFAULT 0,
+    RoundOffAmount NUMERIC NOT NULL DEFAULT 0,
+    NetAmount NUMERIC NOT NULL DEFAULT 0,
+    Notes TEXT NULL,
+    CreatedBy INTEGER NOT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL,
+    FOREIGN KEY (PurchaseId) REFERENCES Purchases(Id),
+    FOREIGN KEY (SupplierId) REFERENCES Suppliers(Id)
+);
+
+CREATE TABLE IF NOT EXISTS PurchaseReturnItems (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    PurchaseReturnId INTEGER NOT NULL,
+    PurchaseItemId INTEGER NOT NULL,
+    ProductId INTEGER NOT NULL,
+    BatchNumber TEXT NOT NULL,
+    ReturnQuantity INTEGER NOT NULL DEFAULT 0,
+    ReturnFreeQuantity INTEGER NOT NULL DEFAULT 0,
+    PTR NUMERIC NOT NULL DEFAULT 0,
+    GstPercentage NUMERIC NOT NULL DEFAULT 0,
+    TaxableAmount NUMERIC NOT NULL DEFAULT 0,
+    GstAmount NUMERIC NOT NULL DEFAULT 0,
+    LineTotal NUMERIC NOT NULL DEFAULT 0,
+    FOREIGN KEY (PurchaseReturnId) REFERENCES PurchaseReturns(Id) ON DELETE CASCADE,
+    FOREIGN KEY (PurchaseItemId) REFERENCES PurchaseItems(Id),
+    FOREIGN KEY (ProductId) REFERENCES Products(Id)
+);
+
 CREATE TABLE IF NOT EXISTS Invoices (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     InvoiceNumber TEXT NOT NULL UNIQUE,
@@ -155,6 +191,30 @@ CREATE TABLE IF NOT EXISTS StockLedger (
     FOREIGN KEY (ProductId) REFERENCES Products(Id)
 );
 
+CREATE TABLE IF NOT EXISTS StockAdjustments (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    AdjustmentNumber TEXT NOT NULL UNIQUE,
+    AdjustmentDate TEXT NOT NULL,
+    Notes TEXT NULL,
+    CreatedBy INTEGER NOT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS StockAdjustmentItems (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    StockAdjustmentId INTEGER NOT NULL,
+    ProductId INTEGER NOT NULL,
+    BatchNumber TEXT NOT NULL,
+    AdjustmentMode TEXT NOT NULL,
+    Quantity INTEGER NOT NULL DEFAULT 0,
+    BalanceQuantity INTEGER NOT NULL DEFAULT 0,
+    UnitCost NUMERIC NOT NULL DEFAULT 0,
+    Remarks TEXT NULL,
+    FOREIGN KEY (StockAdjustmentId) REFERENCES StockAdjustments(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ProductId) REFERENCES Products(Id)
+);
+
 CREATE TABLE IF NOT EXISTS Settings (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     SettingKey TEXT NOT NULL UNIQUE,
@@ -172,4 +232,7 @@ CREATE INDEX IF NOT EXISTS IX_Suppliers_SupplierName ON Suppliers(SupplierName);
 CREATE INDEX IF NOT EXISTS IX_Invoices_InvoiceDate ON Invoices(InvoiceDate);
 CREATE INDEX IF NOT EXISTS IX_Invoices_CustomerId ON Invoices(CustomerId);
 CREATE INDEX IF NOT EXISTS IX_Purchases_PurchaseDate ON Purchases(PurchaseDate);
+CREATE INDEX IF NOT EXISTS IX_PurchaseReturns_ReturnDate ON PurchaseReturns(ReturnDate);
+CREATE INDEX IF NOT EXISTS IX_PurchaseReturnItems_PurchaseItemId ON PurchaseReturnItems(PurchaseItemId);
 CREATE INDEX IF NOT EXISTS IX_StockLedger_ProductId ON StockLedger(ProductId);
+CREATE INDEX IF NOT EXISTS IX_StockAdjustments_AdjustmentDate ON StockAdjustments(AdjustmentDate);

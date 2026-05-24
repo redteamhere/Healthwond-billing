@@ -17,6 +17,7 @@ Namespace Forms
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
         Private ReadOnly _inventoryService As InventoryService
+        Private ReadOnly _stockOperationService As StockOperationService
         Private ReadOnly _settingsService As SettingsService
         Private ReadOnly _clockTimer As Timer
 
@@ -33,7 +34,7 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, settingsService As SettingsService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settingsService As SettingsService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
@@ -43,6 +44,7 @@ Namespace Forms
             _invoiceExportService = invoiceExportService
             _reportService = reportService
             _inventoryService = inventoryService
+            _stockOperationService = stockOperationService
             _settingsService = settingsService
 
             Text = "Healthwond Billing System - Dashboard"
@@ -105,6 +107,7 @@ Namespace Forms
             navPanel.Controls.Add(CreateSidebarButton("F6  Reports", "Reports"))
             navPanel.Controls.Add(CreateSidebarButton("F7  Inventory", "Inventory"))
             navPanel.Controls.Add(CreateSidebarButton("F8  Invoice History", "InvoiceHistory"))
+            navPanel.Controls.Add(CreateSidebarButton("F9  Stock Ops", "StockOps"))
 
             btnSettings = CreateSidebarButton("Admin  Settings", "Settings")
             navPanel.Controls.Add(btnSettings)
@@ -118,7 +121,7 @@ Namespace Forms
                 .Height = 84,
                 .Font = New Font("Segoe UI", 9.25F, FontStyle.Regular),
                 .ForeColor = Color.FromArgb(207, 219, 232),
-                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, inventory oversight, invoice history, and admin configuration management.",
+                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, inventory oversight, invoice history, stock operations, and admin configuration management.",
                 .TextAlign = ContentAlignment.BottomLeft
             }
 
@@ -237,8 +240,9 @@ Namespace Forms
                     "- Reports now support sales, purchases, GST, stock, receivables, and profit summary views.",
                     "- Inventory now supports current stock, batch stock, expiry watchlists, low stock review, and ledger history export.",
                     "- Invoice history now supports saved invoice search, reopen-for-edit, re-export, preview, print, and document access.",
+                    "- Stock operations now support purchase returns and manual stock adjustments with ledger posting and payable corrections.",
                     "- Settings now support company profile, prefixes, low-stock threshold, currency, and invoice template control.",
-                    "- Return workflows and payment settlement will follow in the next modules."),
+                    "- Payment settlement and advanced analytics will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -332,6 +336,9 @@ Namespace Forms
                 Case "InvoiceHistory"
                     OpenInvoiceHistoryDialog()
                     Await RefreshSummaryAsync()
+                Case "StockOps"
+                    OpenStockOperationsDialog()
+                    Await RefreshSummaryAsync()
                 Case "Settings"
                     If Not SessionManager.IsAdmin Then
                         MessageBox.Show("Settings access is limited to administrator accounts.", "Access Restricted", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -379,6 +386,12 @@ Namespace Forms
 
         Private Sub OpenInvoiceHistoryDialog()
             Using form As New FrmInvoiceHistory(_billingService, _invoiceExportService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenStockOperationsDialog()
+            Using form As New FrmStockOperations(_stockOperationService)
                 form.ShowDialog(Me)
             End Using
         End Sub
@@ -454,6 +467,9 @@ Namespace Forms
                     Return True
                 Case Keys.F8
                     OpenInvoiceHistoryDialog()
+                    Return True
+                Case Keys.F9
+                    OpenStockOperationsDialog()
                     Return True
             End Select
 
