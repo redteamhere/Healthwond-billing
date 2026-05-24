@@ -15,6 +15,7 @@ Namespace Forms
         Private ReadOnly _billingService As BillingService
         Private ReadOnly _purchaseService As PurchaseService
         Private ReadOnly _invoiceExportService As InvoiceExportService
+        Private ReadOnly _reportService As ReportService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -30,7 +31,7 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
@@ -38,6 +39,7 @@ Namespace Forms
             _billingService = billingService
             _purchaseService = purchaseService
             _invoiceExportService = invoiceExportService
+            _reportService = reportService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -226,7 +228,8 @@ Namespace Forms
                     "- Customer master supports search, CRUD, contact details, GSTINs, license numbers, and dues.",
                     "- Billing now supports customer selection, product lines, GST totals, invoice save, and Excel/PDF export with print actions.",
                     "- Purchases now support supplier management, batch stock-in, ledger posting, and payable accumulation.",
-                    "- Reports and deeper inventory views will follow in the next modules."),
+                    "- Reports now support sales, purchases, GST, stock, receivables, and profit summary views.",
+                    "- Settings and deeper inventory views will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -313,6 +316,8 @@ Namespace Forms
                     Await RefreshSummaryAsync()
                 Case "Refresh"
                     Await RefreshSummaryAsync()
+                Case "Reports"
+                    OpenReportsDialog()
                 Case "Settings"
                     If Not SessionManager.IsAdmin Then
                         MessageBox.Show("Settings access is limited to administrator accounts.", "Access Restricted", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -341,6 +346,12 @@ Namespace Forms
 
         Private Sub OpenPurchasesDialog()
             Using form As New FrmPurchases(_purchaseService, _supplierService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenReportsDialog()
+            Using form As New FrmReports(_reportService)
                 form.ShowDialog(Me)
             End Using
         End Sub
@@ -403,7 +414,7 @@ Namespace Forms
                     LogoutButton_Click(Me, EventArgs.Empty)
                     Return True
                 Case Keys.F6
-                    ShowFutureModuleMessage("Reports")
+                    OpenReportsDialog()
                     Return True
             End Select
 
