@@ -174,6 +174,38 @@ CREATE TABLE IF NOT EXISTS InvoiceItems (
     FOREIGN KEY (ProductId) REFERENCES Products(Id)
 );
 
+CREATE TABLE IF NOT EXISTS CustomerPayments (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ReceiptNumber TEXT NOT NULL UNIQUE,
+    CustomerId INTEGER NOT NULL,
+    PaymentDate TEXT NOT NULL,
+    PaymentMode TEXT NULL,
+    ReferenceNumber TEXT NULL,
+    Amount NUMERIC NOT NULL DEFAULT 0,
+    BalanceAfterPayment NUMERIC NOT NULL DEFAULT 0,
+    Notes TEXT NULL,
+    CreatedBy INTEGER NOT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL,
+    FOREIGN KEY (CustomerId) REFERENCES Customers(Id)
+);
+
+CREATE TABLE IF NOT EXISTS SupplierPayments (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    PaymentNumber TEXT NOT NULL UNIQUE,
+    SupplierId INTEGER NOT NULL,
+    PaymentDate TEXT NOT NULL,
+    PaymentMode TEXT NULL,
+    ReferenceNumber TEXT NULL,
+    Amount NUMERIC NOT NULL DEFAULT 0,
+    BalanceAfterPayment NUMERIC NOT NULL DEFAULT 0,
+    Notes TEXT NULL,
+    CreatedBy INTEGER NOT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL,
+    FOREIGN KEY (SupplierId) REFERENCES Suppliers(Id)
+);
+
 CREATE TABLE IF NOT EXISTS StockLedger (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     ProductId INTEGER NOT NULL,
@@ -231,7 +263,11 @@ CREATE INDEX IF NOT EXISTS IX_Customers_CustomerName ON Customers(CustomerName);
 CREATE INDEX IF NOT EXISTS IX_Suppliers_SupplierName ON Suppliers(SupplierName);
 CREATE INDEX IF NOT EXISTS IX_Invoices_InvoiceDate ON Invoices(InvoiceDate);
 CREATE INDEX IF NOT EXISTS IX_Invoices_CustomerId ON Invoices(CustomerId);
+CREATE INDEX IF NOT EXISTS IX_CustomerPayments_PaymentDate ON CustomerPayments(PaymentDate);
+CREATE INDEX IF NOT EXISTS IX_CustomerPayments_CustomerId ON CustomerPayments(CustomerId);
 CREATE INDEX IF NOT EXISTS IX_Purchases_PurchaseDate ON Purchases(PurchaseDate);
+CREATE INDEX IF NOT EXISTS IX_SupplierPayments_PaymentDate ON SupplierPayments(PaymentDate);
+CREATE INDEX IF NOT EXISTS IX_SupplierPayments_SupplierId ON SupplierPayments(SupplierId);
 CREATE INDEX IF NOT EXISTS IX_PurchaseReturns_ReturnDate ON PurchaseReturns(ReturnDate);
 CREATE INDEX IF NOT EXISTS IX_PurchaseReturnItems_PurchaseItemId ON PurchaseReturnItems(PurchaseItemId);
 CREATE INDEX IF NOT EXISTS IX_StockLedger_ProductId ON StockLedger(ProductId);

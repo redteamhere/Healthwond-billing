@@ -34,6 +34,8 @@ Namespace Database
             InsertSetting(connection, transaction, "CompanyDrugLicense", "DL-HWB-2024-01", "Company drug license displayed on invoices.", createdAt)
             InsertSetting(connection, transaction, "InvoicePrefix", "HWB", "Prefix for auto-generated invoice numbers.", createdAt)
             InsertSetting(connection, transaction, "PurchasePrefix", "PUR", "Prefix for auto-generated purchase numbers.", createdAt)
+            InsertSetting(connection, transaction, "ReceiptPrefix", "RCPT", "Prefix for auto-generated customer collection receipts.", createdAt)
+            InsertSetting(connection, transaction, "SupplierPaymentPrefix", "SPAY", "Prefix for auto-generated supplier payment numbers.", createdAt)
             InsertSetting(connection, transaction, "LowStockThreshold", "10", "Default low stock alert threshold.", createdAt)
             InsertSetting(connection, transaction, "CurrencySymbol", "Rs.", "Default invoice currency symbol.", createdAt)
             InsertSetting(connection, transaction, "InvoiceTemplatePath", "Templates/GSTInvoiceTemplate.xlsx", "Default GST invoice template path.", createdAt)
