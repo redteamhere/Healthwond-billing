@@ -64,7 +64,7 @@ Namespace Forms
             }
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 78))
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 154))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 92))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 116))
             root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 36))
 

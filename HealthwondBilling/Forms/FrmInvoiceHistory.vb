@@ -61,8 +61,8 @@ Namespace Forms
                 .BackColor = ThemePalette.AppBackground
             }
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 78))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 88))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 68))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 108))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 104))
             root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 36))
 

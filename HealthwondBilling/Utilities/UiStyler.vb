@@ -70,7 +70,9 @@ Namespace Utilities
 
         Public Shared Sub StyleCard(control As Control)
             control.BackColor = ThemePalette.CardBackground
-            control.Padding = New Padding(24)
+            If control.Padding = Padding.Empty Then
+                control.Padding = New Padding(24)
+            End If
         End Sub
 
         Public Shared Function CreateScrollableHost(content As Control) As Panel
