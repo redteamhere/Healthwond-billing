@@ -294,8 +294,8 @@ Namespace Forms
                 .RowCount = 4
             }
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 114))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 196))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 86))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 236))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 152))
             root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             root.Controls.Add(BuildCustomerSummaryCard(), 0, 0)
@@ -303,7 +303,7 @@ Namespace Forms
             root.Controls.Add(BuildCustomerHistoryFilterCard(), 0, 2)
             root.Controls.Add(BuildCustomerHistoryCard(), 0, 3)
 
-            Return root
+            Return UiStyler.CreateScrollableHost(root)
         End Function
 
         Private Function BuildSupplierDetailsCard() As Control
@@ -313,8 +313,8 @@ Namespace Forms
                 .RowCount = 4
             }
             root.RowStyles.Add(New RowStyle(SizeType.Absolute, 114))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 196))
-            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 86))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 236))
+            root.RowStyles.Add(New RowStyle(SizeType.Absolute, 152))
             root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             root.Controls.Add(BuildSupplierSummaryCard(), 0, 0)
@@ -322,7 +322,7 @@ Namespace Forms
             root.Controls.Add(BuildSupplierHistoryFilterCard(), 0, 2)
             root.Controls.Add(BuildSupplierHistoryCard(), 0, 3)
 
-            Return root
+            Return UiStyler.CreateScrollableHost(root)
         End Function
 
         Private Function BuildCustomerSummaryCard() As Control
@@ -392,11 +392,11 @@ Namespace Forms
                 .ColumnCount = 4,
                 .RowCount = 2
             }
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 26.0F))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 34.0F))
-            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 82))
             layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             layout.Controls.Add(CreateInputHost("Receipt Number", txtReceiptNumber), 0, 0)
@@ -406,22 +406,26 @@ Namespace Forms
 
             Dim lowerLayout As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
-                .ColumnCount = 3
+                .ColumnCount = 2,
+                .RowCount = 2
             }
-            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 220))
-            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 330))
+            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 34.0F))
+            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 66.0F))
+            lowerLayout.RowStyles.Add(New RowStyle(SizeType.Absolute, 82))
+            lowerLayout.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             lowerLayout.Controls.Add(CreateInputHost("Collection Amount", nudCustomerPaymentAmount), 0, 0)
 
             txtCustomerNotes.Multiline = True
             txtCustomerNotes.ScrollBars = ScrollBars.Vertical
-            lowerLayout.Controls.Add(CreateInputHost("Notes", txtCustomerNotes), 1, 0)
+            Dim customerNotesHost As Control = CreateInputHost("Notes", txtCustomerNotes)
+            lowerLayout.Controls.Add(customerNotesHost, 0, 1)
+            lowerLayout.SetColumnSpan(customerNotesHost, 2)
 
             Dim buttonFlow As New FlowLayoutPanel With {
                 .Dock = DockStyle.Fill,
                 .FlowDirection = FlowDirection.LeftToRight,
-                .WrapContents = False,
+                .WrapContents = True,
                 .BackColor = Color.Transparent,
                 .Padding = New Padding(0, 22, 0, 0)
             }
@@ -436,17 +440,17 @@ Namespace Forms
 
             UiStyler.StylePrimaryButton(btnCustomerSave)
             btnCustomerSave.Text = "Save Collection"
-            btnCustomerSave.Width = 130
+            btnCustomerSave.Width = 145
 
             buttonFlow.Controls.Add(btnCustomerFillDue)
             buttonFlow.Controls.Add(btnCustomerNew)
             buttonFlow.Controls.Add(btnCustomerSave)
-            lowerLayout.Controls.Add(buttonFlow, 2, 0)
+            lowerLayout.Controls.Add(buttonFlow, 1, 0)
 
             layout.Controls.Add(lowerLayout, 0, 1)
             layout.SetColumnSpan(lowerLayout, 4)
 
-            panel.Controls.Add(layout)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(layout))
             Return panel
         End Function
 
@@ -459,11 +463,11 @@ Namespace Forms
                 .ColumnCount = 4,
                 .RowCount = 2
             }
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 26.0F))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 34.0F))
-            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 82))
             layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             layout.Controls.Add(CreateInputHost("Payment Number", txtSupplierPaymentNumber), 0, 0)
@@ -473,22 +477,26 @@ Namespace Forms
 
             Dim lowerLayout As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
-                .ColumnCount = 3
+                .ColumnCount = 2,
+                .RowCount = 2
             }
-            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 220))
-            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 330))
+            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 34.0F))
+            lowerLayout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 66.0F))
+            lowerLayout.RowStyles.Add(New RowStyle(SizeType.Absolute, 82))
+            lowerLayout.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             lowerLayout.Controls.Add(CreateInputHost("Payment Amount", nudSupplierPaymentAmount), 0, 0)
 
             txtSupplierNotes.Multiline = True
             txtSupplierNotes.ScrollBars = ScrollBars.Vertical
-            lowerLayout.Controls.Add(CreateInputHost("Notes", txtSupplierNotes), 1, 0)
+            Dim supplierNotesHost As Control = CreateInputHost("Notes", txtSupplierNotes)
+            lowerLayout.Controls.Add(supplierNotesHost, 0, 1)
+            lowerLayout.SetColumnSpan(supplierNotesHost, 2)
 
             Dim buttonFlow As New FlowLayoutPanel With {
                 .Dock = DockStyle.Fill,
                 .FlowDirection = FlowDirection.LeftToRight,
-                .WrapContents = False,
+                .WrapContents = True,
                 .BackColor = Color.Transparent,
                 .Padding = New Padding(0, 22, 0, 0)
             }
@@ -503,17 +511,17 @@ Namespace Forms
 
             UiStyler.StylePrimaryButton(btnSupplierSave)
             btnSupplierSave.Text = "Save Payment"
-            btnSupplierSave.Width = 130
+            btnSupplierSave.Width = 145
 
             buttonFlow.Controls.Add(btnSupplierFillDue)
             buttonFlow.Controls.Add(btnSupplierNew)
             buttonFlow.Controls.Add(btnSupplierSave)
-            lowerLayout.Controls.Add(buttonFlow, 2, 0)
+            lowerLayout.Controls.Add(buttonFlow, 1, 0)
 
             layout.Controls.Add(lowerLayout, 0, 1)
             layout.SetColumnSpan(lowerLayout, 4)
 
-            panel.Controls.Add(layout)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(layout))
             Return panel
         End Function
 
@@ -523,24 +531,25 @@ Namespace Forms
 
             Dim layout As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
-                .ColumnCount = 4
+                .ColumnCount = 2,
+                .RowCount = 2
             }
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 140))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
 
             layout.Controls.Add(CreateInputHost("History From", dtpCustomerHistoryFrom), 0, 0)
             layout.Controls.Add(CreateInputHost("History To", dtpCustomerHistoryTo), 1, 0)
-            layout.Controls.Add(CreateInputHost("Search history", txtCustomerHistorySearch), 2, 0)
+            layout.Controls.Add(CreateInputHost("Search history", txtCustomerHistorySearch), 0, 1)
 
             UiStyler.StyleSecondaryButton(btnRefreshCustomerHistory)
             btnRefreshCustomerHistory.Text = "Refresh"
-            btnRefreshCustomerHistory.Width = 110
-            btnRefreshCustomerHistory.Margin = New Padding(0, 24, 0, 0)
-            layout.Controls.Add(btnRefreshCustomerHistory, 3, 0)
+            btnRefreshCustomerHistory.Dock = DockStyle.Fill
+            btnRefreshCustomerHistory.Margin = New Padding(12, 24, 0, 10)
+            layout.Controls.Add(btnRefreshCustomerHistory, 1, 1)
 
-            panel.Controls.Add(layout)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(layout))
             Return panel
         End Function
 
@@ -550,24 +559,25 @@ Namespace Forms
 
             Dim layout As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
-                .ColumnCount = 4
+                .ColumnCount = 2,
+                .RowCount = 2
             }
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 140))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+            layout.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
+            layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
 
             layout.Controls.Add(CreateInputHost("History From", dtpSupplierHistoryFrom), 0, 0)
             layout.Controls.Add(CreateInputHost("History To", dtpSupplierHistoryTo), 1, 0)
-            layout.Controls.Add(CreateInputHost("Search history", txtSupplierHistorySearch), 2, 0)
+            layout.Controls.Add(CreateInputHost("Search history", txtSupplierHistorySearch), 0, 1)
 
             UiStyler.StyleSecondaryButton(btnRefreshSupplierHistory)
             btnRefreshSupplierHistory.Text = "Refresh"
-            btnRefreshSupplierHistory.Width = 110
-            btnRefreshSupplierHistory.Margin = New Padding(0, 24, 0, 0)
-            layout.Controls.Add(btnRefreshSupplierHistory, 3, 0)
+            btnRefreshSupplierHistory.Dock = DockStyle.Fill
+            btnRefreshSupplierHistory.Margin = New Padding(12, 24, 0, 10)
+            layout.Controls.Add(btnRefreshSupplierHistory, 1, 1)
 
-            panel.Controls.Add(layout)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(layout))
             Return panel
         End Function
 
