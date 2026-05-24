@@ -26,14 +26,18 @@ Friend Module Program
             Dim userRepository As New UserRepository(connectionFactory)
             Dim productRepository As New ProductRepository(connectionFactory)
             Dim customerRepository As New CustomerRepository(connectionFactory)
+            Dim supplierRepository As New SupplierRepository(connectionFactory)
             Dim invoiceRepository As New InvoiceRepository(connectionFactory)
+            Dim purchaseRepository As New PurchaseRepository(connectionFactory)
             Dim authService As New AuthService(userRepository)
             Dim dashboardService As New DashboardService(connectionFactory)
             Dim productService As New ProductService(productRepository)
             Dim customerService As New CustomerService(customerRepository)
+            Dim supplierService As New SupplierService(supplierRepository)
             Dim billingService As New BillingService(invoiceRepository, customerRepository, productRepository)
+            Dim purchaseService As New PurchaseService(purchaseRepository, supplierRepository, productRepository)
 
-            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, billingService))
+            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService))
         Catch ex As Exception
             AppLogger.Error("Application bootstrap failed.", ex)
             MessageBox.Show(

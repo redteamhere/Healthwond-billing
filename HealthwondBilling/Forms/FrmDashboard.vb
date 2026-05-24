@@ -11,7 +11,9 @@ Namespace Forms
         Private ReadOnly _dashboardService As DashboardService
         Private ReadOnly _productService As ProductService
         Private ReadOnly _customerService As CustomerService
+        Private ReadOnly _supplierService As SupplierService
         Private ReadOnly _billingService As BillingService
+        Private ReadOnly _purchaseService As PurchaseService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -27,11 +29,13 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, billingService As BillingService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
+            _supplierService = supplierService
             _billingService = billingService
+            _purchaseService = purchaseService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -104,7 +108,7 @@ Namespace Forms
                 .Height = 84,
                 .Font = New Font("Segoe UI", 9.25F, FontStyle.Regular),
                 .ForeColor = Color.FromArgb(207, 219, 232),
-                .Text = "Current build contains the foundation plus live product and customer master management.",
+                .Text = "Current build includes authentication, dashboard analytics, masters, billing, and live purchase stock-in workflows.",
                 .TextAlign = ContentAlignment.BottomLeft
             }
 
@@ -219,7 +223,8 @@ Namespace Forms
                     "- Product master supports search, CRUD, barcode, pricing, GST, expiry, and stock adjustments.",
                     "- Customer master supports search, CRUD, contact details, GSTINs, license numbers, and dues.",
                     "- Billing now supports customer selection, product lines, GST totals, and invoice save with stock deduction.",
-                    "- Purchases, reports, invoice template export, and printing will follow in the next modules."),
+                    "- Purchases now support supplier management, batch stock-in, ledger posting, and payable accumulation.",
+                    "- Reports, invoice template export, and printing will follow in the next modules."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -301,6 +306,9 @@ Namespace Forms
                 Case "Billing"
                     OpenBillingDialog()
                     Await RefreshSummaryAsync()
+                Case "Purchases"
+                    OpenPurchasesDialog()
+                    Await RefreshSummaryAsync()
                 Case "Refresh"
                     Await RefreshSummaryAsync()
                 Case "Settings"
@@ -325,6 +333,12 @@ Namespace Forms
 
         Private Sub OpenBillingDialog()
             Using form As New FrmBilling(_billingService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenPurchasesDialog()
+            Using form As New FrmPurchases(_purchaseService, _supplierService)
                 form.ShowDialog(Me)
             End Using
         End Sub
@@ -378,7 +392,7 @@ Namespace Forms
                     OpenCustomersDialog()
                     Return True
                 Case Keys.F4
-                    ShowFutureModuleMessage("Purchases")
+                    OpenPurchasesDialog()
                     Return True
                 Case Keys.F5
                     Dim refreshTask As Task = RefreshSummaryAsync()

@@ -12,7 +12,9 @@ Namespace Forms
         Private ReadOnly _dashboardService As DashboardService
         Private ReadOnly _productService As ProductService
         Private ReadOnly _customerService As CustomerService
+        Private ReadOnly _supplierService As SupplierService
         Private ReadOnly _billingService As BillingService
+        Private ReadOnly _purchaseService As PurchaseService
 
         Private ReadOnly txtUsername As TextBox
         Private ReadOnly txtPassword As TextBox
@@ -21,12 +23,14 @@ Namespace Forms
         Private ReadOnly btnExit As Button
         Private ReadOnly lblStatus As Label
 
-        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, billingService As BillingService)
+        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService)
             _authService = authService
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
+            _supplierService = supplierService
             _billingService = billingService
+            _purchaseService = purchaseService
 
             Text = "Healthwond Billing System - Login"
             StartPosition = FormStartPosition.CenterScreen
@@ -300,7 +304,7 @@ Namespace Forms
 
                 SessionManager.StartSession(result.User)
 
-                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _billingService)
+                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService)
                     Hide()
                     dashboard.ShowDialog(Me)
 
