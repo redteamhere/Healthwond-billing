@@ -101,6 +101,12 @@ Namespace Forms
                 .Padding = New Padding(0, 16, 0, 0)
             }
 
+            Dim navHost As New Panel With {
+                .Dock = DockStyle.Fill,
+                .AutoScroll = True,
+                .BackColor = Color.Transparent
+            }
+
             navPanel.Controls.Add(CreateSidebarButton("F1  Billing", "Billing"))
             navPanel.Controls.Add(CreateSidebarButton("F2  Products", "Products"))
             navPanel.Controls.Add(CreateSidebarButton("F3  Customers", "Customers"))
@@ -119,6 +125,20 @@ Namespace Forms
             AddHandler logoutButton.Click, AddressOf LogoutButton_Click
             navPanel.Controls.Add(logoutButton)
 
+            navHost.Controls.Add(navPanel)
+            AddHandler navHost.SizeChanged,
+                Sub()
+                    Dim availableWidth As Integer = Math.Max(navHost.DisplayRectangle.Width - 2, 150)
+                    navPanel.Width = availableWidth
+
+                    For Each control As Control In navPanel.Controls
+                        Dim button As Button = TryCast(control, Button)
+                        If button IsNot Nothing Then
+                            button.Width = Math.Max(availableWidth, 150)
+                        End If
+                    Next
+                End Sub
+
             Dim footer As New Label With {
                 .Dock = DockStyle.Bottom,
                 .Height = 84,
@@ -129,7 +149,7 @@ Namespace Forms
             }
 
             sidebar.Controls.Add(footer)
-            sidebar.Controls.Add(navPanel)
+            sidebar.Controls.Add(navHost)
             sidebar.Controls.Add(title)
 
             Return sidebar
