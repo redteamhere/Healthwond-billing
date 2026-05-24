@@ -177,7 +177,7 @@ Namespace Forms
             editor.Controls.Add(note, 0, 3)
             editor.SetColumnSpan(note, 2)
 
-            panel.Controls.Add(editor)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
             Return panel
         End Function
@@ -265,7 +265,7 @@ Namespace Forms
             editor.Controls.Add(resolvedHost, 0, 3)
             editor.SetColumnSpan(resolvedHost, 2)
 
-            panel.Controls.Add(editor)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
             Return panel
         End Function

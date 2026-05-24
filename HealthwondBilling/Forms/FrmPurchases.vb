@@ -204,7 +204,7 @@ Namespace Forms
             editor.Controls.Add(addressHost, 0, 3)
             editor.SetColumnSpan(addressHost, 2)
 
-            panel.Controls.Add(editor)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(actionFlow)
             panel.Controls.Add(title)
             Return panel
@@ -245,7 +245,7 @@ Namespace Forms
             editor.Controls.Add(notesHost, 0, 2)
             editor.SetColumnSpan(notesHost, 2)
 
-            panel.Controls.Add(editor)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
             Return panel
         End Function
@@ -302,7 +302,7 @@ Namespace Forms
             buttonHost.Controls.Add(btnRemoveItem)
             grid.Controls.Add(buttonHost, 9, 0)
 
-            panel.Controls.Add(grid)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(grid))
             Return panel
         End Function
 
@@ -402,7 +402,7 @@ Namespace Forms
 
             root.Controls.Add(totalsTable, 0, 0)
             root.Controls.Add(buttonFlow, 1, 0)
-            panel.Controls.Add(root)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(root))
             Return panel
         End Function
 

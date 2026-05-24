@@ -151,7 +151,7 @@ Namespace Forms
             grid.Controls.Add(notesHost, 1, 1)
             grid.SetColumnSpan(notesHost, 3)
 
-            panel.Controls.Add(grid)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(grid))
             Return panel
         End Function
 
@@ -199,7 +199,7 @@ Namespace Forms
             buttonHost.Controls.Add(btnRemoveItem)
             grid.Controls.Add(buttonHost, 5, 0)
 
-            panel.Controls.Add(grid)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(grid))
             Return panel
         End Function
 
@@ -321,7 +321,7 @@ Namespace Forms
 
             root.Controls.Add(totalsTable, 0, 0)
             root.Controls.Add(buttonFlow, 1, 0)
-            panel.Controls.Add(root)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(root))
             Return panel
         End Function
 

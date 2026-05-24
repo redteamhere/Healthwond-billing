@@ -73,6 +73,32 @@ Namespace Utilities
             control.Padding = New Padding(24)
         End Sub
 
+        Public Shared Function CreateScrollableHost(content As Control) As Panel
+            Dim host As New Panel With {
+                .Dock = DockStyle.Fill,
+                .AutoScroll = True,
+                .BackColor = ThemePalette.CardBackground
+            }
+
+            content.Dock = DockStyle.Top
+            content.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
+            content.AutoSize = True
+
+            host.Controls.Add(content)
+
+            AddHandler host.SizeChanged,
+                Sub()
+                    Dim targetWidth As Integer = host.DisplayRectangle.Width
+                    If targetWidth <= 0 Then
+                        targetWidth = host.ClientSize.Width
+                    End If
+
+                    content.Width = Math.Max(targetWidth, 0)
+                End Sub
+
+            Return host
+        End Function
+
     End Class
 
 End Namespace

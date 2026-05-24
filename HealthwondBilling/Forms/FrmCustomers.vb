@@ -220,7 +220,7 @@ Namespace Forms
             editor.Controls.Add(addressHost, 0, 3)
             editor.SetColumnSpan(addressHost, 2)
 
-            panel.Controls.Add(editor)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
             Return panel
         End Function

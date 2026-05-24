@@ -233,7 +233,7 @@ Namespace Forms
             editor.Controls.Add(compositionHost, 0, 6)
             editor.SetColumnSpan(compositionHost, 2)
 
-            panel.Controls.Add(editor)
+            panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
             Return panel
         End Function
