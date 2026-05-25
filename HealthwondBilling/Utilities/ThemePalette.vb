@@ -15,6 +15,15 @@ Namespace Utilities
         Public Shared ReadOnly Property CardBackground As Color = Color.White
         Public Shared ReadOnly Property TextPrimary As Color = Color.FromArgb(33, 37, 41)
         Public Shared ReadOnly Property TextMuted As Color = Color.FromArgb(104, 112, 118)
+        Public Shared ReadOnly Property ClassicShellBlue As Color = Color.FromArgb(182, 204, 224)
+        Public Shared ReadOnly Property ClassicShellGreen As Color = Color.FromArgb(84, 124, 116)
+        Public Shared ReadOnly Property ClassicShellDarkGreen As Color = Color.FromArgb(49, 80, 59)
+        Public Shared ReadOnly Property ClassicShellCream As Color = Color.FromArgb(241, 241, 223)
+        Public Shared ReadOnly Property ClassicShellPaleBlue As Color = Color.FromArgb(209, 226, 241)
+        Public Shared ReadOnly Property ClassicShellShadow As Color = Color.FromArgb(139, 139, 139)
+        Public Shared ReadOnly Property ClassicShellBorder As Color = Color.FromArgb(69, 69, 58)
+        Public Shared ReadOnly Property ClassicShellHintBar As Color = Color.FromArgb(89, 126, 119)
+        Public Shared ReadOnly Property ClassicShellFooter As Color = Color.FromArgb(252, 252, 252)
 
     End Class
 
