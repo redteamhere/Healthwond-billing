@@ -32,6 +32,18 @@ Namespace Services
             Return Await Task.Run(Function() _reportRepository.GetCustomerOutstandingReport())
         End Function
 
+        Public Async Function GetCustomerAgingReportAsync(asOfDate As DateTime) As Task(Of List(Of AgingReportRow))
+            Return Await Task.Run(Function() _reportRepository.GetCustomerAgingReport(asOfDate))
+        End Function
+
+        Public Async Function GetSupplierAgingReportAsync(asOfDate As DateTime) As Task(Of List(Of AgingReportRow))
+            Return Await Task.Run(Function() _reportRepository.GetSupplierAgingReport(asOfDate))
+        End Function
+
+        Public Async Function GetReportOverviewAsync(fromDate As DateTime, toDate As DateTime) As Task(Of ReportOverview)
+            Return Await Task.Run(Function() _reportRepository.GetReportOverview(fromDate, toDate))
+        End Function
+
         Public Async Function GetProfitLossReportAsync(fromDate As DateTime, toDate As DateTime) As Task(Of ProfitLossReport)
             Return Await Task.Run(Function() _reportRepository.GetProfitLossReport(fromDate, toDate))
         End Function

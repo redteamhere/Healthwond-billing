@@ -25,8 +25,12 @@ Namespace Forms
         Private ReadOnly dgvGst As New DataGridView()
         Private ReadOnly dgvStock As New DataGridView()
         Private ReadOnly dgvOutstanding As New DataGridView()
+        Private ReadOnly dgvCustomerAging As New DataGridView()
+        Private ReadOnly dgvSupplierAging As New DataGridView()
 
+        Private ReadOnly overviewLabels As New Dictionary(Of String, Label)()
         Private ReadOnly profitLabels As New Dictionary(Of String, Label)()
+        Private _overview As ReportOverview
         Private _profitLossReport As ProfitLossReport
         Private _isBusy As Boolean
 
@@ -84,7 +88,7 @@ Namespace Forms
 
             Dim subtitle As New Label With {
                 .Dock = DockStyle.Fill,
-                .Text = "Review sales, purchases, GST, current stock, receivables, and estimated gross profit from the live SQLite data set.",
+                .Text = "Review operational metrics, aging balances, sales, purchases, GST, stock, receivables, and gross-profit indicators from the live SQLite data set.",
                 .Font = New Font("Segoe UI", 10.5F, FontStyle.Regular),
                 .ForeColor = ThemePalette.TextMuted
             }
@@ -146,14 +150,76 @@ Namespace Forms
             tabs.Appearance = TabAppearance.Normal
             tabs.Font = New Font("Segoe UI Semibold", 10.0F, FontStyle.Bold)
 
+            tabs.TabPages.Add(CreateOverviewTab())
             tabs.TabPages.Add(CreateGridTab("Sales", dgvSales))
             tabs.TabPages.Add(CreateGridTab("Purchases", dgvPurchases))
             tabs.TabPages.Add(CreateGridTab("GST", dgvGst))
             tabs.TabPages.Add(CreateGridTab("Stock", dgvStock))
             tabs.TabPages.Add(CreateGridTab("Outstanding", dgvOutstanding))
+            tabs.TabPages.Add(CreateGridTab("Customer Aging", dgvCustomerAging))
+            tabs.TabPages.Add(CreateGridTab("Supplier Aging", dgvSupplierAging))
             tabs.TabPages.Add(CreateProfitTab())
 
             Return tabs
+        End Function
+
+        Private Function CreateOverviewTab() As TabPage
+            Dim page As New TabPage("Overview") With {.BackColor = ThemePalette.AppBackground}
+            Dim host As New Panel With {.Dock = DockStyle.Fill, .BackColor = Color.White}
+            UiStyler.StyleCard(host)
+
+            Dim table As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill,
+                .ColumnCount = 2
+            }
+            table.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 55.0F))
+            table.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 45.0F))
+
+            Dim metrics As String() = {
+                "Sales Invoice Count",
+                "Purchase Bill Count",
+                "Sales Units",
+                "Purchase Units",
+                "Average Sale Bill",
+                "Average Purchase Bill",
+                "Collections Received",
+                "Supplier Payments",
+                "Collection Efficiency %",
+                "Supplier Payment Coverage %",
+                "Inventory SKU Count",
+                "Inventory Stock Value At PTR",
+                "Outstanding Receivables",
+                "Outstanding Payables",
+                "Net Cash Movement"
+            }
+
+            For rowIndex As Integer = 0 To metrics.Length - 1
+                table.RowStyles.Add(New RowStyle(SizeType.Absolute, 34))
+
+                Dim caption As New Label With {
+                    .Dock = DockStyle.Fill,
+                    .Text = metrics(rowIndex),
+                    .ForeColor = ThemePalette.TextPrimary,
+                    .Font = New Font("Segoe UI", 10.0F, FontStyle.Regular),
+                    .TextAlign = ContentAlignment.MiddleLeft
+                }
+
+                Dim valueLabel As New Label With {
+                    .Dock = DockStyle.Fill,
+                    .Text = "0.00",
+                    .ForeColor = ThemePalette.TextPrimary,
+                    .Font = New Font("Segoe UI Semibold", 10.5F, FontStyle.Bold),
+                    .TextAlign = ContentAlignment.MiddleRight
+                }
+
+                overviewLabels(metrics(rowIndex)) = valueLabel
+                table.Controls.Add(caption, 0, rowIndex)
+                table.Controls.Add(valueLabel, 1, rowIndex)
+            Next
+
+            host.Controls.Add(table)
+            page.Controls.Add(host)
+            Return page
         End Function
 
         Private Function CreateGridTab(title As String, grid As DataGridView) As TabPage
@@ -250,6 +316,8 @@ Namespace Forms
             ConfigureGrid(dgvGst)
             ConfigureGrid(dgvStock)
             ConfigureGrid(dgvOutstanding)
+            ConfigureGrid(dgvCustomerAging)
+            ConfigureGrid(dgvSupplierAging)
         End Sub
 
         Private Sub ConfigureGrid(grid As DataGridView)
@@ -291,15 +359,21 @@ Namespace Forms
                 Dim gstTask As Task(Of List(Of GstReportRow)) = _reportService.GetGstReportAsync(fromDate, toDate)
                 Dim stockTask As Task(Of List(Of StockReportRow)) = _reportService.GetStockReportAsync()
                 Dim outstandingTask As Task(Of List(Of CustomerOutstandingReportRow)) = _reportService.GetCustomerOutstandingReportAsync()
+                Dim customerAgingTask As Task(Of List(Of AgingReportRow)) = _reportService.GetCustomerAgingReportAsync(toDate)
+                Dim supplierAgingTask As Task(Of List(Of AgingReportRow)) = _reportService.GetSupplierAgingReportAsync(toDate)
+                Dim overviewTask As Task(Of ReportOverview) = _reportService.GetReportOverviewAsync(fromDate, toDate)
                 Dim profitTask As Task(Of ProfitLossReport) = _reportService.GetProfitLossReportAsync(fromDate, toDate)
 
-                Await Task.WhenAll(salesTask, purchaseTask, gstTask, stockTask, outstandingTask, profitTask)
+                Await Task.WhenAll(salesTask, purchaseTask, gstTask, stockTask, outstandingTask, customerAgingTask, supplierAgingTask, overviewTask, profitTask)
 
+                BindOverview(overviewTask.Result)
                 BindGrid(dgvSales, salesTask.Result)
                 BindGrid(dgvPurchases, purchaseTask.Result)
                 BindGrid(dgvGst, gstTask.Result)
                 BindGrid(dgvStock, stockTask.Result)
                 BindGrid(dgvOutstanding, outstandingTask.Result)
+                BindGrid(dgvCustomerAging, customerAgingTask.Result)
+                BindGrid(dgvSupplierAging, supplierAgingTask.Result)
                 BindProfit(profitTask.Result)
 
                 ShowStatus("Reports loaded successfully.", False)
@@ -320,6 +394,7 @@ Namespace Forms
         Private Sub ApplyGridFormatting(grid As DataGridView)
             For Each column As DataGridViewColumn In grid.Columns
                 Dim propertyName As String = column.DataPropertyName
+                column.HeaderText = ResolveHeaderText(propertyName)
                 If propertyName.EndsWith("Date", StringComparison.OrdinalIgnoreCase) Then
                     column.DefaultCellStyle.Format = "dd-MMM-yyyy"
                 ElseIf propertyName.IndexOf("Amount", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
@@ -333,6 +408,89 @@ Namespace Forms
                     column.DefaultCellStyle.Format = "N2"
                 End If
             Next
+        End Sub
+
+        Private Function ResolveHeaderText(propertyName As String) As String
+            Select Case propertyName
+                Case NameOf(AgingReportRow.PartyName)
+                    Return "Party"
+                Case NameOf(AgingReportRow.DrugLicenseNumber)
+                    Return "Drug License"
+                Case NameOf(AgingReportRow.OpenDocumentCount)
+                    Return "Open Docs"
+                Case NameOf(AgingReportRow.OldestOpenDate)
+                    Return "Oldest Open Date"
+                Case NameOf(AgingReportRow.AgeInDays)
+                    Return "Age (Days)"
+                Case NameOf(AgingReportRow.Days0To30Amount)
+                    Return "0-30 Days"
+                Case NameOf(AgingReportRow.Days31To60Amount)
+                    Return "31-60 Days"
+                Case NameOf(AgingReportRow.Days61To90Amount)
+                    Return "61-90 Days"
+                Case NameOf(AgingReportRow.DaysAbove90Amount)
+                    Return ">90 Days"
+                Case NameOf(AgingReportRow.UnallocatedAmount)
+                    Return "Unallocated"
+                Case NameOf(CustomerOutstandingReportRow.DrugLicenseNumber)
+                    Return "Drug License"
+                Case NameOf(CustomerOutstandingReportRow.OutstandingBalance)
+                    Return "Outstanding"
+                Case Else
+                    Return InsertSpaces(propertyName)
+            End Select
+        End Function
+
+        Private Function InsertSpaces(value As String) As String
+            If String.IsNullOrWhiteSpace(value) Then
+                Return String.Empty
+            End If
+
+            Dim builder As New System.Text.StringBuilder()
+            For index As Integer = 0 To value.Length - 1
+                Dim currentChar As Char = value(index)
+                If index > 0 AndAlso Char.IsUpper(currentChar) AndAlso (Char.IsLower(value(index - 1)) OrElse Char.IsDigit(value(index - 1))) Then
+                    builder.Append(" "c)
+                End If
+                builder.Append(currentChar)
+            Next
+
+            Return builder.ToString()
+        End Function
+
+        Private Sub BindOverview(overview As ReportOverview)
+            _overview = overview
+            SetOverviewValue("Sales Invoice Count", overview.SalesInvoiceCount)
+            SetOverviewValue("Purchase Bill Count", overview.PurchaseBillCount)
+            SetOverviewValue("Sales Units", overview.SalesUnits)
+            SetOverviewValue("Purchase Units", overview.PurchaseUnits)
+            SetOverviewValue("Average Sale Bill", overview.AverageSaleBillValue)
+            SetOverviewValue("Average Purchase Bill", overview.AveragePurchaseBillValue)
+            SetOverviewValue("Collections Received", overview.CustomerCollectionsAmount)
+            SetOverviewValue("Supplier Payments", overview.SupplierPaymentsAmount)
+            SetOverviewValue("Collection Efficiency %", overview.CollectionEfficiencyPercentage, True)
+            SetOverviewValue("Supplier Payment Coverage %", overview.SupplierPaymentCoveragePercentage, True)
+            SetOverviewValue("Inventory SKU Count", overview.InventorySkuCount)
+            SetOverviewValue("Inventory Stock Value At PTR", overview.InventoryStockValueAtPTR)
+            SetOverviewValue("Outstanding Receivables", overview.OutstandingReceivables)
+            SetOverviewValue("Outstanding Payables", overview.OutstandingPayables)
+            SetOverviewValue("Net Cash Movement", overview.NetCashMovement)
+        End Sub
+
+        Private Sub SetOverviewValue(metricName As String, value As Integer)
+            If Not overviewLabels.ContainsKey(metricName) Then
+                Return
+            End If
+
+            overviewLabels(metricName).Text = value.ToString("N0")
+        End Sub
+
+        Private Sub SetOverviewValue(metricName As String, value As Decimal, Optional isPercent As Boolean = False)
+            If Not overviewLabels.ContainsKey(metricName) Then
+                Return
+            End If
+
+            overviewLabels(metricName).Text = If(isPercent, $"{value:N2}%", value.ToString("N2"))
         End Sub
 
         Private Sub BindProfit(report As ProfitLossReport)
@@ -360,6 +518,12 @@ Namespace Forms
             Try
                 Dim filePath As String
                 Select Case tabs.SelectedTab.Text
+                    Case "Overview"
+                        If _overview Is Nothing Then
+                            ShowStatus("Load reports before exporting.", True)
+                            Return
+                        End If
+                        filePath = ReportExportHelper.ExportOverview(_overview)
                     Case "Sales"
                         filePath = ReportExportHelper.ExportGrid("SalesReport", dgvSales)
                     Case "Purchases"
@@ -370,6 +534,10 @@ Namespace Forms
                         filePath = ReportExportHelper.ExportGrid("StockReport", dgvStock)
                     Case "Outstanding"
                         filePath = ReportExportHelper.ExportGrid("CustomerOutstandingReport", dgvOutstanding)
+                    Case "Customer Aging"
+                        filePath = ReportExportHelper.ExportGrid("CustomerAgingReport", dgvCustomerAging)
+                    Case "Supplier Aging"
+                        filePath = ReportExportHelper.ExportGrid("SupplierAgingReport", dgvSupplierAging)
                     Case Else
                         If _profitLossReport Is Nothing Then
                             ShowStatus("Load reports before exporting.", True)
