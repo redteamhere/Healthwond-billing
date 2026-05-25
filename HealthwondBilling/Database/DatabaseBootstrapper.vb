@@ -1,5 +1,6 @@
 Imports HealthwondBilling.Utilities
 Imports System.Data.SQLite
+Imports System.Data.Common
 Imports System.IO
 
 Namespace Database
@@ -31,6 +32,8 @@ Namespace Database
                     command.CommandText = schemaScript
                     command.ExecuteNonQuery()
                 End Using
+
+                EnsureSchemaCompatibility(connection)
             End Using
 
             Dim seedDataService As New SeedDataService(_connectionFactory)
@@ -41,6 +44,39 @@ Namespace Database
             End If
 
             AppLogger.Info("Database bootstrap completed.")
+        End Sub
+
+        Private Sub EnsureSchemaCompatibility(connection As DbConnection)
+            EnsureColumnExists(connection, "Purchases", "SupplierInvoiceDate", "TEXT NULL")
+            EnsureColumnExists(connection, "Purchases", "PurchaseOrderNumber", "TEXT NULL")
+            EnsureColumnExists(connection, "Purchases", "PurchaseOrderDate", "TEXT NULL")
+            EnsureColumnExists(connection, "Purchases", "PlaceOfSupply", "TEXT NULL")
+            EnsureColumnExists(connection, "Purchases", "CaseCount", "INTEGER NOT NULL DEFAULT 0")
+            EnsureColumnExists(connection, "Purchases", "TransportName", "TEXT NULL")
+            EnsureColumnExists(connection, "Purchases", "EwayBillNumber", "TEXT NULL")
+
+            EnsureColumnExists(connection, "PurchaseItems", "ProductName", "TEXT NULL")
+            EnsureColumnExists(connection, "PurchaseItems", "Packing", "TEXT NULL")
+            EnsureColumnExists(connection, "PurchaseItems", "HsnCode", "TEXT NULL")
+        End Sub
+
+        Private Sub EnsureColumnExists(connection As DbConnection, tableName As String, columnName As String, columnDefinition As String)
+            Using checkCommand = connection.CreateCommand()
+                checkCommand.CommandText = $"PRAGMA table_info({tableName});"
+
+                Using reader = checkCommand.ExecuteReader()
+                    While reader.Read()
+                        If String.Equals(Convert.ToString(reader("name")), columnName, StringComparison.OrdinalIgnoreCase) Then
+                            Return
+                        End If
+                    End While
+                End Using
+            End Using
+
+            Using alterCommand = connection.CreateCommand()
+                alterCommand.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition};"
+                alterCommand.ExecuteNonQuery()
+            End Using
         End Sub
 
     End Class

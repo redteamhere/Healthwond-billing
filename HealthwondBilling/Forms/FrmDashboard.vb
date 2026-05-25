@@ -14,6 +14,7 @@ Namespace Forms
         Private ReadOnly _supplierService As SupplierService
         Private ReadOnly _billingService As BillingService
         Private ReadOnly _purchaseService As PurchaseService
+        Private ReadOnly _purchasePrintService As PurchasePrintService
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
         Private ReadOnly _inventoryService As InventoryService
@@ -35,13 +36,14 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
             _supplierService = supplierService
             _billingService = billingService
             _purchaseService = purchaseService
+            _purchasePrintService = purchasePrintService
             _invoiceExportService = invoiceExportService
             _reportService = reportService
             _inventoryService = inventoryService
@@ -394,7 +396,7 @@ Namespace Forms
         End Sub
 
         Private Sub OpenPurchasesDialog()
-            Using form As New FrmPurchases(_purchaseService, _supplierService)
+            Using form As New FrmPurchases(_purchaseService, _supplierService, _purchasePrintService)
                 form.ShowDialog(Me)
             End Using
         End Sub

@@ -11,17 +11,26 @@ Namespace Forms
 
         Private ReadOnly _purchaseService As PurchaseService
         Private ReadOnly _supplierService As SupplierService
+        Private ReadOnly _purchasePrintService As PurchasePrintService
         Private ReadOnly _purchaseItems As New BindingList(Of PurchaseLineItem)()
 
         Private _suppliers As New List(Of SupplierRecord)()
         Private _products As New List(Of ProductRecord)()
         Private _currentSupplierId As Integer
         Private _isBusy As Boolean
+        Private _lastSavedPurchaseId As Integer
 
         Private ReadOnly txtPurchaseNumber As New TextBox()
         Private ReadOnly dtpPurchaseDate As New DateTimePicker()
         Private ReadOnly cboSupplier As New ComboBox()
         Private ReadOnly txtSupplierInvoiceNumber As New TextBox()
+        Private ReadOnly dtpSupplierInvoiceDate As New DateTimePicker()
+        Private ReadOnly txtPurchaseOrderNumber As New TextBox()
+        Private ReadOnly dtpPurchaseOrderDate As New DateTimePicker()
+        Private ReadOnly txtPlaceOfSupply As New TextBox()
+        Private ReadOnly nudCaseCount As New NumericUpDown()
+        Private ReadOnly txtTransportName As New TextBox()
+        Private ReadOnly txtEwayBillNumber As New TextBox()
         Private ReadOnly txtNotes As New TextBox()
 
         Private ReadOnly txtSupplierName As New TextBox()
@@ -36,6 +45,8 @@ Namespace Forms
         Private ReadOnly btnDeleteSupplier As New Button()
 
         Private ReadOnly cboProduct As New ComboBox()
+        Private ReadOnly txtPacking As New TextBox()
+        Private ReadOnly txtHsnCode As New TextBox()
         Private ReadOnly txtBatchNumber As New TextBox()
         Private ReadOnly dtpExpiryDate As New DateTimePicker()
         Private ReadOnly nudQuantity As New NumericUpDown()
@@ -50,6 +61,8 @@ Namespace Forms
         Private ReadOnly dgvItems As New DataGridView()
         Private ReadOnly btnNewPurchase As New Button()
         Private ReadOnly btnSavePurchase As New Button()
+        Private ReadOnly btnPrintPreview As New Button()
+        Private ReadOnly btnPrint As New Button()
         Private ReadOnly btnClose As New Button()
         Private ReadOnly lblStatus As New Label()
 
@@ -59,9 +72,10 @@ Namespace Forms
         Private ReadOnly lblNetAmountValue As New Label()
         Private ReadOnly txtTaxSummary As New TextBox()
 
-        Public Sub New(purchaseService As PurchaseService, supplierService As SupplierService)
+        Public Sub New(purchaseService As PurchaseService, supplierService As SupplierService, purchasePrintService As PurchasePrintService)
             _purchaseService = purchaseService
             _supplierService = supplierService
+            _purchasePrintService = purchasePrintService
 
             Text = "Healthwond Billing System - Purchases"
             StartPosition = FormStartPosition.CenterParent
@@ -224,26 +238,39 @@ Namespace Forms
 
             Dim editor As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
-                .ColumnCount = 2,
+                .ColumnCount = 4,
                 .Padding = New Padding(0, 14, 0, 0)
             }
-            editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
-            editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
-            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 72))
-            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 72))
+            For index As Integer = 0 To 3
+                editor.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 25.0F))
+            Next
+            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 68))
+            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 68))
+            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 68))
             editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 108))
             editor.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             editor.Controls.Add(CreateInputHost("Purchase Number", txtPurchaseNumber), 0, 0)
             editor.Controls.Add(CreateInputHost("Purchase Date", dtpPurchaseDate), 1, 0)
-            editor.Controls.Add(CreateInputHost("Supplier", cboSupplier), 0, 1)
-            editor.Controls.Add(CreateInputHost("Supplier Invoice Number", txtSupplierInvoiceNumber), 1, 1)
+            editor.Controls.Add(CreateInputHost("Supplier Invoice Number", txtSupplierInvoiceNumber), 2, 0)
+            editor.Controls.Add(CreateInputHost("Supplier Invoice Date", dtpSupplierInvoiceDate), 3, 0)
+
+            Dim supplierHost As Control = CreateInputHost("Supplier", cboSupplier)
+            editor.Controls.Add(supplierHost, 0, 1)
+            editor.SetColumnSpan(supplierHost, 2)
+            editor.Controls.Add(CreateInputHost("P.O. Number", txtPurchaseOrderNumber), 2, 1)
+            editor.Controls.Add(CreateInputHost("P.O. Date", dtpPurchaseOrderDate), 3, 1)
+
+            editor.Controls.Add(CreateInputHost("Place of Supply", txtPlaceOfSupply), 0, 2)
+            editor.Controls.Add(CreateInputHost("Cases", nudCaseCount), 1, 2)
+            editor.Controls.Add(CreateInputHost("Transport", txtTransportName), 2, 2)
+            editor.Controls.Add(CreateInputHost("E-Way Bill Number", txtEwayBillNumber), 3, 2)
 
             txtNotes.Multiline = True
             txtNotes.ScrollBars = ScrollBars.Vertical
             Dim notesHost As Control = CreateInputHost("Notes", txtNotes)
-            editor.Controls.Add(notesHost, 0, 2)
-            editor.SetColumnSpan(notesHost, 2)
+            editor.Controls.Add(notesHost, 0, 3)
+            editor.SetColumnSpan(notesHost, 4)
 
             panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
@@ -256,36 +283,40 @@ Namespace Forms
 
             Dim grid As New TableLayoutPanel With {
                 .Dock = DockStyle.Fill,
-                .ColumnCount = 10,
+                .ColumnCount = 12,
                 .Padding = New Padding(0, 10, 0, 0)
             }
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 24.0F))
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 12.0F))
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 11.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 19.0F))
             grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 8.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 9.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 10.0F))
             grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 8.0F))
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 8.0F))
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 8.0F))
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 8.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 6.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 6.0F))
             grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 7.0F))
-            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 14.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 7.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 7.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 6.0F))
+            grid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 17.0F))
             grid.RowStyles.Add(New RowStyle(SizeType.Absolute, 72))
             grid.RowStyles.Add(New RowStyle(SizeType.Absolute, 50))
 
             grid.Controls.Add(CreateInputHost("Product", cboProduct), 0, 0)
-            grid.Controls.Add(CreateInputHost("Batch", txtBatchNumber), 1, 0)
-            grid.Controls.Add(CreateInputHost("Expiry", dtpExpiryDate), 2, 0)
-            grid.Controls.Add(CreateInputHost("Qty", nudQuantity), 3, 0)
-            grid.Controls.Add(CreateInputHost("Free Qty", nudFreeQuantity), 4, 0)
-            grid.Controls.Add(CreateInputHost("PTR", nudPTR), 5, 0)
-            grid.Controls.Add(CreateInputHost("PTS", nudPTS), 6, 0)
-            grid.Controls.Add(CreateInputHost("MRP", nudMRP), 7, 0)
-            grid.Controls.Add(CreateInputHost("GST %", nudGST), 8, 0)
+            grid.Controls.Add(CreateInputHost("Packing", txtPacking), 1, 0)
+            grid.Controls.Add(CreateInputHost("HSN", txtHsnCode), 2, 0)
+            grid.Controls.Add(CreateInputHost("Batch", txtBatchNumber), 3, 0)
+            grid.Controls.Add(CreateInputHost("Expiry", dtpExpiryDate), 4, 0)
+            grid.Controls.Add(CreateInputHost("Qty", nudQuantity), 5, 0)
+            grid.Controls.Add(CreateInputHost("Free Qty", nudFreeQuantity), 6, 0)
+            grid.Controls.Add(CreateInputHost("PTR", nudPTR), 7, 0)
+            grid.Controls.Add(CreateInputHost("PTS", nudPTS), 8, 0)
+            grid.Controls.Add(CreateInputHost("MRP", nudMRP), 9, 0)
+            grid.Controls.Add(CreateInputHost("GST %", nudGST), 10, 0)
 
             Dim buttonHost As New FlowLayoutPanel With {
                 .Dock = DockStyle.Fill,
                 .FlowDirection = FlowDirection.LeftToRight,
-                .WrapContents = False,
+                .WrapContents = True,
                 .Padding = New Padding(0, 22, 0, 0),
                 .BackColor = Color.Transparent
             }
@@ -300,7 +331,7 @@ Namespace Forms
 
             buttonHost.Controls.Add(btnAddItem)
             buttonHost.Controls.Add(btnRemoveItem)
-            grid.Controls.Add(buttonHost, 9, 0)
+            grid.Controls.Add(buttonHost, 11, 0)
 
             panel.Controls.Add(UiStyler.CreateScrollableHost(grid))
             Return panel
@@ -379,8 +410,8 @@ Namespace Forms
             Dim buttonFlow As New FlowLayoutPanel With {
                 .Dock = DockStyle.Fill,
                 .FlowDirection = FlowDirection.LeftToRight,
-                .WrapContents = False,
-                .Padding = New Padding(0, 84, 0, 0),
+                .WrapContents = True,
+                .Padding = New Padding(0, 48, 0, 0),
                 .BackColor = Color.Transparent
             }
 
@@ -392,12 +423,22 @@ Namespace Forms
             btnSavePurchase.Text = "Save Purchase"
             btnSavePurchase.Width = 130
 
+            UiStyler.StyleSecondaryButton(btnPrintPreview)
+            btnPrintPreview.Text = "Print Preview"
+            btnPrintPreview.Width = 130
+
+            UiStyler.StylePrimaryButton(btnPrint)
+            btnPrint.Text = "Print"
+            btnPrint.Width = 100
+
             UiStyler.StyleSecondaryButton(btnClose)
             btnClose.Text = "Close"
             btnClose.Width = 90
 
             buttonFlow.Controls.Add(btnNewPurchase)
             buttonFlow.Controls.Add(btnSavePurchase)
+            buttonFlow.Controls.Add(btnPrintPreview)
+            buttonFlow.Controls.Add(btnPrint)
             buttonFlow.Controls.Add(btnClose)
 
             root.Controls.Add(totalsTable, 0, 0)
@@ -447,18 +488,23 @@ Namespace Forms
             txtPurchaseNumber.BorderStyle = BorderStyle.FixedSingle
             UiStyler.StyleInput(txtPurchaseNumber)
 
-            dtpPurchaseDate.Format = DateTimePickerFormat.Custom
-            dtpPurchaseDate.CustomFormat = "dd-MMM-yyyy"
+            ConfigureDatePicker(dtpPurchaseDate)
+            ConfigureOptionalDatePicker(dtpSupplierInvoiceDate)
+            ConfigureOptionalDatePicker(dtpPurchaseOrderDate)
 
             ConfigureCombo(cboSupplier)
             ConfigureCombo(cboProduct)
 
-            For Each editorTextBox As TextBox In New TextBox() {txtSupplierInvoiceNumber, txtNotes, txtSupplierName, txtSupplierPhone, txtSupplierGstin, txtSupplierEmail, txtSupplierLicense, txtSupplierAddress, txtBatchNumber}
+            For Each editorTextBox As TextBox In New TextBox() {txtSupplierInvoiceNumber, txtPurchaseOrderNumber, txtPlaceOfSupply, txtTransportName, txtEwayBillNumber, txtNotes, txtSupplierName, txtSupplierPhone, txtSupplierGstin, txtSupplierEmail, txtSupplierLicense, txtSupplierAddress, txtPacking, txtHsnCode, txtBatchNumber}
                 editorTextBox.BorderStyle = BorderStyle.FixedSingle
                 UiStyler.StyleInput(editorTextBox)
             Next
 
+            txtPacking.ReadOnly = True
+            txtHsnCode.ReadOnly = True
+
             ConfigureNumeric(nudSupplierOutstanding, 2, 100000000D, 50D)
+            ConfigureNumeric(nudCaseCount, 0, 1000000D, 1D)
             ConfigureNumeric(nudQuantity, 0, 1000000D, 1D)
             ConfigureNumeric(nudFreeQuantity, 0, 1000000D, 1D)
             ConfigureNumeric(nudPTR, 2, 1000000D, 1D)
@@ -467,8 +513,7 @@ Namespace Forms
             ConfigureNumeric(nudGST, 2, 100D, 0.5D)
 
             nudQuantity.Value = 1D
-            dtpExpiryDate.Format = DateTimePickerFormat.Custom
-            dtpExpiryDate.CustomFormat = "dd-MMM-yyyy"
+            ConfigureDatePicker(dtpExpiryDate)
         End Sub
 
         Private Sub ConfigureCombo(combo As ComboBox)
@@ -487,27 +532,57 @@ Namespace Forms
             control.Font = New Font("Segoe UI", 10.5F, FontStyle.Regular)
         End Sub
 
+        Private Sub ConfigureDatePicker(control As DateTimePicker)
+            control.Format = DateTimePickerFormat.Custom
+            control.CustomFormat = "dd-MMM-yyyy"
+        End Sub
+
+        Private Sub ConfigureOptionalDatePicker(control As DateTimePicker)
+            ConfigureDatePicker(control)
+            control.ShowCheckBox = True
+            control.Checked = False
+        End Sub
+
         Private Sub ConfigureGrid()
             UiStyler.StyleDataGrid(dgvItems)
             dgvItems.ReadOnly = False
+            dgvItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
+            dgvItems.ScrollBars = ScrollBars.Both
             dgvItems.DataSource = _purchaseItems
             dgvItems.Columns.Clear()
 
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "LineNumber", .HeaderText = "#", .FillWeight = 32.0F, .ReadOnly = True})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "ProductName", .HeaderText = "Product", .FillWeight = 170.0F, .ReadOnly = True})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "BatchNumber", .HeaderText = "Batch", .FillWeight = 72.0F})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "ExpiryDate", .HeaderText = "Expiry", .FillWeight = 72.0F, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "dd-MMM-yyyy"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "ExistingStock", .HeaderText = "Stock", .FillWeight = 56.0F, .ReadOnly = True})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "Quantity", .HeaderText = "Qty", .FillWeight = 52.0F})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "FreeQuantity", .HeaderText = "Free", .FillWeight = 56.0F})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "PTR", .HeaderText = "PTR", .FillWeight = 64.0F, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "PTS", .HeaderText = "PTS", .FillWeight = 64.0F, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "MRP", .HeaderText = "MRP", .FillWeight = 64.0F, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "GstPercentage", .HeaderText = "GST %", .FillWeight = 58.0F, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "TaxableAmount", .HeaderText = "Taxable", .FillWeight = 72.0F, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "GstAmount", .HeaderText = "GST", .FillWeight = 64.0F, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.DataPropertyName = "LineTotal", .HeaderText = "Total", .FillWeight = 72.0F, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "N2"}})
+            dgvItems.Columns.Add(CreateGridColumn("LineNumber", "#", 40, True))
+            dgvItems.Columns.Add(CreateGridColumn("ProductName", "Product", 180, True))
+            dgvItems.Columns.Add(CreateGridColumn("Packing", "Pack", 70, True))
+            dgvItems.Columns.Add(CreateGridColumn("HsnCode", "HSN", 90, True))
+            dgvItems.Columns.Add(CreateGridColumn("BatchNumber", "Batch", 90))
+            dgvItems.Columns.Add(CreateGridColumn("ExpiryDate", "Expiry", 90, True, "dd-MMM-yyyy"))
+            dgvItems.Columns.Add(CreateGridColumn("ExistingStock", "Stock", 65, True))
+            dgvItems.Columns.Add(CreateGridColumn("Quantity", "Qty", 55))
+            dgvItems.Columns.Add(CreateGridColumn("FreeQuantity", "Free", 55))
+            dgvItems.Columns.Add(CreateGridColumn("PTR", "PTR", 70, False, "N2"))
+            dgvItems.Columns.Add(CreateGridColumn("PTS", "PTS", 70, False, "N2"))
+            dgvItems.Columns.Add(CreateGridColumn("MRP", "MRP", 70, False, "N2"))
+            dgvItems.Columns.Add(CreateGridColumn("GstPercentage", "GST %", 60, False, "N2"))
+            dgvItems.Columns.Add(CreateGridColumn("TaxableAmount", "Taxable", 90, True, "N2"))
+            dgvItems.Columns.Add(CreateGridColumn("GstAmount", "GST", 80, True, "N2"))
+            dgvItems.Columns.Add(CreateGridColumn("LineTotal", "Total", 90, True, "N2"))
         End Sub
+
+        Private Function CreateGridColumn(propertyName As String, headerText As String, width As Integer, Optional [readOnly] As Boolean = False, Optional format As String = Nothing) As DataGridViewTextBoxColumn
+            Dim column As New DataGridViewTextBoxColumn With {
+                .DataPropertyName = propertyName,
+                .HeaderText = headerText,
+                .Width = width,
+                .ReadOnly = [readOnly]
+            }
+
+            If Not String.IsNullOrWhiteSpace(format) Then
+                column.DefaultCellStyle = New DataGridViewCellStyle With {.Format = format}
+            End If
+
+            Return column
+        End Function
 
         Private Sub WireEvents()
             AddHandler Load, AddressOf FrmPurchases_Load
@@ -518,6 +593,8 @@ Namespace Forms
             AddHandler btnRemoveItem.Click, AddressOf btnRemoveItem_Click
             AddHandler btnNewPurchase.Click, AddressOf btnNewPurchase_Click
             AddHandler btnSavePurchase.Click, AddressOf btnSavePurchase_Click
+            AddHandler btnPrintPreview.Click, AddressOf btnPrintPreview_Click
+            AddHandler btnPrint.Click, AddressOf btnPrint_Click
             AddHandler btnClose.Click, AddressOf btnClose_Click
             AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
             AddHandler cboProduct.SelectedIndexChanged, AddressOf cboProduct_SelectedIndexChanged
@@ -586,6 +663,13 @@ Namespace Forms
         Private Async Function PrepareNewPurchaseAsync() As Task
             _purchaseItems.Clear()
             txtSupplierInvoiceNumber.Clear()
+            ResetOptionalDatePicker(dtpSupplierInvoiceDate)
+            txtPurchaseOrderNumber.Clear()
+            ResetOptionalDatePicker(dtpPurchaseOrderDate)
+            txtPlaceOfSupply.Clear()
+            nudCaseCount.Value = 0D
+            txtTransportName.Clear()
+            txtEwayBillNumber.Clear()
             txtNotes.Clear()
             cboProduct.SelectedIndex = -1
             ResetItemEntry()
@@ -708,10 +792,14 @@ Namespace Forms
 
             Dim product As ProductRecord = TryCast(cboProduct.SelectedItem, ProductRecord)
             If product Is Nothing Then
+                txtPacking.Clear()
+                txtHsnCode.Clear()
                 Return
             End If
 
             Dim line As PurchaseLineItem = _purchaseService.CreateLineFromProduct(product)
+            txtPacking.Text = line.Packing
+            txtHsnCode.Text = line.HsnCode
             txtBatchNumber.Text = line.BatchNumber
             dtpExpiryDate.Value = If(line.ExpiryDate = DateTime.MinValue, DateTime.Today, line.ExpiryDate)
             nudQuantity.Value = 1D
@@ -811,6 +899,13 @@ Namespace Forms
                 .SupplierId = If(supplier Is Nothing, 0, supplier.Id),
                 .SupplierName = If(supplier Is Nothing, String.Empty, supplier.SupplierName),
                 .SupplierInvoiceNumber = txtSupplierInvoiceNumber.Text,
+                .SupplierInvoiceDate = ReadOptionalDate(dtpSupplierInvoiceDate),
+                .PurchaseOrderNumber = txtPurchaseOrderNumber.Text,
+                .PurchaseOrderDate = ReadOptionalDate(dtpPurchaseOrderDate),
+                .PlaceOfSupply = txtPlaceOfSupply.Text,
+                .CaseCount = Decimal.ToInt32(nudCaseCount.Value),
+                .TransportName = txtTransportName.Text,
+                .EwayBillNumber = txtEwayBillNumber.Text,
                 .Notes = txtNotes.Text
             }
 
@@ -823,12 +918,46 @@ Namespace Forms
             SetBusy(True, "Saving purchase...")
             Dim result As PurchaseSaveResult = Await _purchaseService.SavePurchaseAsync(draft, If(SessionManager.CurrentUser Is Nothing, 0, SessionManager.CurrentUser.Id))
             SetBusy(False)
-            ShowStatus(result.Message, Not result.IsSuccess)
 
             If result.IsSuccess Then
+                _lastSavedPurchaseId = result.PurchaseId
+                UpdatePrintActionState()
                 Await LoadLookupsAsync(draft.SupplierId)
                 Await PrepareNewPurchaseAsync()
+                ShowStatus($"{result.Message} Preview or print is ready.", False)
+            Else
+                ShowStatus(result.Message, True)
             End If
+        End Sub
+
+        Private Sub btnPrintPreview_Click(sender As Object, e As EventArgs)
+            If _lastSavedPurchaseId <= 0 Then
+                ShowStatus("Save a purchase before previewing the print layout.", True)
+                Return
+            End If
+
+            Try
+                _purchasePrintService.ShowPrintPreview(_lastSavedPurchaseId)
+                ShowStatus("Purchase print preview opened.", False)
+            Catch ex As Exception
+                AppLogger.Error($"Purchase preview failed for Id {_lastSavedPurchaseId}.", ex)
+                ShowStatus("Purchase preview could not be opened.", True)
+            End Try
+        End Sub
+
+        Private Sub btnPrint_Click(sender As Object, e As EventArgs)
+            If _lastSavedPurchaseId <= 0 Then
+                ShowStatus("Save a purchase before printing.", True)
+                Return
+            End If
+
+            Try
+                _purchasePrintService.PrintPurchase(_lastSavedPurchaseId)
+                ShowStatus("Purchase sent to printer.", False)
+            Catch ex As Exception
+                AppLogger.Error($"Purchase print failed for Id {_lastSavedPurchaseId}.", ex)
+                ShowStatus("Purchase could not be printed.", True)
+            End Try
         End Sub
 
         Private Sub btnClose_Click(sender As Object, e As EventArgs)
@@ -874,6 +1003,19 @@ Namespace Forms
             txtTaxSummary.Text = summary.TaxSummaryText
         End Sub
 
+        Private Function ReadOptionalDate(control As DateTimePicker) As DateTime?
+            If Not control.Checked Then
+                Return Nothing
+            End If
+
+            Return control.Value.Date
+        End Function
+
+        Private Sub ResetOptionalDatePicker(control As DateTimePicker)
+            control.Value = DateTime.Today
+            control.Checked = False
+        End Sub
+
         Private Sub SetBusy(isBusy As Boolean, Optional message As String = "")
             _isBusy = isBusy
 
@@ -881,6 +1023,13 @@ Namespace Forms
             txtPurchaseNumber.Enabled = Not isBusy
             dtpPurchaseDate.Enabled = Not isBusy
             txtSupplierInvoiceNumber.Enabled = Not isBusy
+            dtpSupplierInvoiceDate.Enabled = Not isBusy
+            txtPurchaseOrderNumber.Enabled = Not isBusy
+            dtpPurchaseOrderDate.Enabled = Not isBusy
+            txtPlaceOfSupply.Enabled = Not isBusy
+            nudCaseCount.Enabled = Not isBusy
+            txtTransportName.Enabled = Not isBusy
+            txtEwayBillNumber.Enabled = Not isBusy
             txtNotes.Enabled = Not isBusy
 
             txtSupplierName.Enabled = Not isBusy
@@ -895,6 +1044,8 @@ Namespace Forms
             btnDeleteSupplier.Enabled = Not isBusy AndAlso _currentSupplierId > 0
 
             cboProduct.Enabled = Not isBusy
+            txtPacking.Enabled = Not isBusy
+            txtHsnCode.Enabled = Not isBusy
             txtBatchNumber.Enabled = Not isBusy
             dtpExpiryDate.Enabled = Not isBusy
             nudQuantity.Enabled = Not isBusy
@@ -909,12 +1060,19 @@ Namespace Forms
 
             btnNewPurchase.Enabled = Not isBusy
             btnSavePurchase.Enabled = Not isBusy
+            btnPrintPreview.Enabled = Not isBusy AndAlso _lastSavedPurchaseId > 0
+            btnPrint.Enabled = Not isBusy AndAlso _lastSavedPurchaseId > 0
             btnClose.Enabled = Not isBusy
 
             If isBusy Then
                 lblStatus.ForeColor = ThemePalette.TextMuted
                 lblStatus.Text = message
             End If
+        End Sub
+
+        Private Sub UpdatePrintActionState()
+            btnPrintPreview.Enabled = Not _isBusy AndAlso _lastSavedPurchaseId > 0
+            btnPrint.Enabled = Not _isBusy AndAlso _lastSavedPurchaseId > 0
         End Sub
 
         Private Sub ShowStatus(message As String, isError As Boolean)
@@ -935,6 +1093,9 @@ Namespace Forms
                     Return True
                 Case Keys.Control Or Keys.N
                     btnNewPurchase.PerformClick()
+                    Return True
+                Case Keys.Control Or Keys.P
+                    btnPrintPreview.PerformClick()
                     Return True
                 Case Keys.Control Or Keys.Shift Or Keys.N
                     btnNewSupplier.PerformClick()

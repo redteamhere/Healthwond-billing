@@ -3,6 +3,7 @@ Imports HealthwondBilling.Models
 Imports HealthwondBilling.Utilities
 Imports System.Data.Common
 Imports System.Globalization
+Imports System.Linq
 
 Namespace Repositories
 
@@ -63,17 +64,40 @@ Namespace Repositories
             End Using
         End Function
 
+        Public Function GetPurchaseDocument(purchaseId As Integer) As PurchaseDocument Implements IPurchaseRepository.GetPurchaseDocument
+            Using connection = _connectionFactory.CreateOpenConnection()
+                Dim document As PurchaseDocument = LoadPurchaseHeader(connection, purchaseId)
+                document.CompanyName = GetSetting(connection, "CompanyName", "Healthwond Pharmacy")
+                document.CompanyAddress = GetSetting(connection, "CompanyAddress", "Address not configured")
+                document.CompanyPhone = GetSetting(connection, "CompanyPhone", String.Empty)
+                document.CompanyGstin = GetSetting(connection, "CompanyGstin", String.Empty)
+                document.CompanyDrugLicenseNumber = GetSetting(connection, "CompanyDrugLicense", String.Empty)
+                document.Items = LoadPurchaseItems(connection, purchaseId)
+                document.TaxLines = LoadPurchaseTaxLines(connection, purchaseId)
+                document.TotalLines = document.Items.Count
+                document.TotalUnits = document.Items.Sum(Function(item) item.Quantity + item.FreeQuantity)
+                Return document
+            End Using
+        End Function
+
         Private Function InsertPurchase(connection As DbConnection, transaction As DbTransaction, draft As PurchaseDraft, createdByUserId As Integer) As Integer
             Using command = connection.CreateCommand()
                 command.Transaction = transaction
                 command.CommandText =
-                    "INSERT INTO Purchases (PurchaseNumber, SupplierId, PurchaseDate, SupplierInvoiceNumber, SubTotal, DiscountAmount, GstAmount, RoundOffAmount, NetAmount, Notes, CreatedBy, CreatedAt, UpdatedAt) " &
-                    "VALUES (@PurchaseNumber, @SupplierId, @PurchaseDate, @SupplierInvoiceNumber, @SubTotal, @DiscountAmount, @GstAmount, @RoundOffAmount, @NetAmount, @Notes, @CreatedBy, @CreatedAt, @UpdatedAt);" &
+                    "INSERT INTO Purchases (PurchaseNumber, SupplierId, PurchaseDate, SupplierInvoiceNumber, SupplierInvoiceDate, PurchaseOrderNumber, PurchaseOrderDate, PlaceOfSupply, CaseCount, TransportName, EwayBillNumber, SubTotal, DiscountAmount, GstAmount, RoundOffAmount, NetAmount, Notes, CreatedBy, CreatedAt, UpdatedAt) " &
+                    "VALUES (@PurchaseNumber, @SupplierId, @PurchaseDate, @SupplierInvoiceNumber, @SupplierInvoiceDate, @PurchaseOrderNumber, @PurchaseOrderDate, @PlaceOfSupply, @CaseCount, @TransportName, @EwayBillNumber, @SubTotal, @DiscountAmount, @GstAmount, @RoundOffAmount, @NetAmount, @Notes, @CreatedBy, @CreatedAt, @UpdatedAt);" &
                     "SELECT last_insert_rowid();"
                 command.AddParameter("@PurchaseNumber", draft.PurchaseNumber)
                 command.AddParameter("@SupplierId", draft.SupplierId)
                 command.AddParameter("@PurchaseDate", SqliteDateHelper.ToStorageDate(draft.PurchaseDate))
                 command.AddParameter("@SupplierInvoiceNumber", draft.SupplierInvoiceNumber)
+                command.AddParameter("@SupplierInvoiceDate", ToNullableStorageDate(draft.SupplierInvoiceDate))
+                command.AddParameter("@PurchaseOrderNumber", draft.PurchaseOrderNumber)
+                command.AddParameter("@PurchaseOrderDate", ToNullableStorageDate(draft.PurchaseOrderDate))
+                command.AddParameter("@PlaceOfSupply", draft.PlaceOfSupply)
+                command.AddParameter("@CaseCount", draft.CaseCount)
+                command.AddParameter("@TransportName", draft.TransportName)
+                command.AddParameter("@EwayBillNumber", draft.EwayBillNumber)
                 command.AddParameter("@SubTotal", draft.Summary.SubTotal)
                 command.AddParameter("@DiscountAmount", draft.Summary.DiscountAmount)
                 command.AddParameter("@GstAmount", draft.Summary.GstAmount)
@@ -178,10 +202,13 @@ Namespace Repositories
             Using command = connection.CreateCommand()
                 command.Transaction = transaction
                 command.CommandText =
-                    "INSERT INTO PurchaseItems (PurchaseId, ProductId, BatchNumber, ExpiryDate, Quantity, FreeQuantity, PTR, PTS, MRP, GstPercentage, TaxableAmount, GstAmount, LineTotal) " &
-                    "VALUES (@PurchaseId, @ProductId, @BatchNumber, @ExpiryDate, @Quantity, @FreeQuantity, @PTR, @PTS, @MRP, @GstPercentage, @TaxableAmount, @GstAmount, @LineTotal);"
+                    "INSERT INTO PurchaseItems (PurchaseId, ProductId, ProductName, Packing, HsnCode, BatchNumber, ExpiryDate, Quantity, FreeQuantity, PTR, PTS, MRP, GstPercentage, TaxableAmount, GstAmount, LineTotal) " &
+                    "VALUES (@PurchaseId, @ProductId, @ProductName, @Packing, @HsnCode, @BatchNumber, @ExpiryDate, @Quantity, @FreeQuantity, @PTR, @PTS, @MRP, @GstPercentage, @TaxableAmount, @GstAmount, @LineTotal);"
                 command.AddParameter("@PurchaseId", purchaseId)
                 command.AddParameter("@ProductId", productId)
+                command.AddParameter("@ProductName", item.ProductName)
+                command.AddParameter("@Packing", item.Packing)
+                command.AddParameter("@HsnCode", item.HsnCode)
                 command.AddParameter("@BatchNumber", item.BatchNumber)
                 command.AddParameter("@ExpiryDate", SqliteDateHelper.ToStorageDate(item.ExpiryDate))
                 command.AddParameter("@Quantity", item.Quantity)
@@ -196,6 +223,121 @@ Namespace Repositories
                 command.ExecuteNonQuery()
             End Using
         End Sub
+
+        Private Function LoadPurchaseHeader(connection As DbConnection, purchaseId As Integer) As PurchaseDocument
+            Using command = connection.CreateCommand()
+                command.CommandText =
+                    "SELECT p.Id, p.PurchaseNumber, p.PurchaseDate, COALESCE(p.SupplierInvoiceNumber, '') AS SupplierInvoiceNumber, p.SupplierInvoiceDate, " &
+                    "COALESCE(p.PurchaseOrderNumber, '') AS PurchaseOrderNumber, p.PurchaseOrderDate, COALESCE(p.PlaceOfSupply, '') AS PlaceOfSupply, " &
+                    "COALESCE(p.CaseCount, 0) AS CaseCount, COALESCE(p.TransportName, '') AS TransportName, COALESCE(p.EwayBillNumber, '') AS EwayBillNumber, " &
+                    "COALESCE(p.Notes, '') AS Notes, p.SubTotal, p.DiscountAmount, p.GstAmount, p.RoundOffAmount, p.NetAmount, " &
+                    "s.SupplierName, COALESCE(s.Address, '') AS Address, COALESCE(s.Phone, '') AS Phone, COALESCE(s.Email, '') AS Email, " &
+                    "COALESCE(s.Gstin, '') AS Gstin, COALESCE(s.DrugLicenseNumber, '') AS DrugLicenseNumber " &
+                    "FROM Purchases p " &
+                    "INNER JOIN Suppliers s ON s.Id = p.SupplierId " &
+                    "WHERE p.Id = @Id LIMIT 1;"
+                command.AddParameter("@Id", purchaseId)
+
+                Using reader = command.ExecuteReader()
+                    If Not reader.Read() Then
+                        Throw New InvalidOperationException($"Purchase Id {purchaseId} was not found.")
+                    End If
+
+                    Return New PurchaseDocument With {
+                        .PurchaseId = Convert.ToInt32(reader("Id"), CultureInfo.InvariantCulture),
+                        .PurchaseNumber = ConvertNullableString(reader("PurchaseNumber")),
+                        .PurchaseDate = ParseDate(reader("PurchaseDate")),
+                        .SupplierInvoiceNumber = ConvertNullableString(reader("SupplierInvoiceNumber")),
+                        .SupplierInvoiceDate = ParseNullableDate(reader("SupplierInvoiceDate")),
+                        .PurchaseOrderNumber = ConvertNullableString(reader("PurchaseOrderNumber")),
+                        .PurchaseOrderDate = ParseNullableDate(reader("PurchaseOrderDate")),
+                        .PlaceOfSupply = ConvertNullableString(reader("PlaceOfSupply")),
+                        .CaseCount = Convert.ToInt32(reader("CaseCount"), CultureInfo.InvariantCulture),
+                        .TransportName = ConvertNullableString(reader("TransportName")),
+                        .EwayBillNumber = ConvertNullableString(reader("EwayBillNumber")),
+                        .Notes = ConvertNullableString(reader("Notes")),
+                        .SubTotal = Convert.ToDecimal(reader("SubTotal"), CultureInfo.InvariantCulture),
+                        .DiscountAmount = Convert.ToDecimal(reader("DiscountAmount"), CultureInfo.InvariantCulture),
+                        .GstAmount = Convert.ToDecimal(reader("GstAmount"), CultureInfo.InvariantCulture),
+                        .RoundOffAmount = Convert.ToDecimal(reader("RoundOffAmount"), CultureInfo.InvariantCulture),
+                        .NetAmount = Convert.ToDecimal(reader("NetAmount"), CultureInfo.InvariantCulture),
+                        .SupplierName = ConvertNullableString(reader("SupplierName")),
+                        .SupplierAddress = ConvertNullableString(reader("Address")),
+                        .SupplierPhone = ConvertNullableString(reader("Phone")),
+                        .SupplierEmail = ConvertNullableString(reader("Email")),
+                        .SupplierGstin = ConvertNullableString(reader("Gstin")),
+                        .SupplierDrugLicenseNumber = ConvertNullableString(reader("DrugLicenseNumber"))
+                    }
+                End Using
+            End Using
+        End Function
+
+        Private Function LoadPurchaseItems(connection As DbConnection, purchaseId As Integer) As List(Of PurchaseDocumentItem)
+            Dim items As New List(Of PurchaseDocumentItem)()
+
+            Using command = connection.CreateCommand()
+                command.CommandText =
+                    "SELECT COALESCE(pi.ProductName, prod.ProductName, '') AS ProductName, COALESCE(pi.Packing, prod.Packing, '') AS Packing, " &
+                    "COALESCE(pi.HsnCode, prod.HsnCode, '') AS HsnCode, pi.BatchNumber, pi.ExpiryDate, pi.Quantity, pi.FreeQuantity, pi.MRP, pi.PTR, " &
+                    "pi.GstPercentage, pi.TaxableAmount, pi.GstAmount, pi.LineTotal " &
+                    "FROM PurchaseItems pi " &
+                    "LEFT JOIN Products prod ON prod.Id = pi.ProductId " &
+                    "WHERE pi.PurchaseId = @PurchaseId " &
+                    "ORDER BY pi.Id ASC;"
+                command.AddParameter("@PurchaseId", purchaseId)
+
+                Using reader = command.ExecuteReader()
+                    Dim lineNumber As Integer = 1
+                    While reader.Read()
+                        items.Add(New PurchaseDocumentItem With {
+                            .LineNumber = lineNumber,
+                            .ProductName = ConvertNullableString(reader("ProductName")),
+                            .Packing = ConvertNullableString(reader("Packing")),
+                            .HsnCode = ConvertNullableString(reader("HsnCode")),
+                            .BatchNumber = ConvertNullableString(reader("BatchNumber")),
+                            .ExpiryDate = ParseDate(reader("ExpiryDate")),
+                            .Quantity = Convert.ToInt32(reader("Quantity"), CultureInfo.InvariantCulture),
+                            .FreeQuantity = Convert.ToInt32(reader("FreeQuantity"), CultureInfo.InvariantCulture),
+                            .MRP = Convert.ToDecimal(reader("MRP"), CultureInfo.InvariantCulture),
+                            .PTR = Convert.ToDecimal(reader("PTR"), CultureInfo.InvariantCulture),
+                            .GstPercentage = Convert.ToDecimal(reader("GstPercentage"), CultureInfo.InvariantCulture),
+                            .TaxableAmount = Convert.ToDecimal(reader("TaxableAmount"), CultureInfo.InvariantCulture),
+                            .GstAmount = Convert.ToDecimal(reader("GstAmount"), CultureInfo.InvariantCulture),
+                            .LineTotal = Convert.ToDecimal(reader("LineTotal"), CultureInfo.InvariantCulture)
+                        })
+                        lineNumber += 1
+                    End While
+                End Using
+            End Using
+
+            Return items
+        End Function
+
+        Private Function LoadPurchaseTaxLines(connection As DbConnection, purchaseId As Integer) As List(Of PurchaseTaxSummaryLine)
+            Dim lines As New List(Of PurchaseTaxSummaryLine)()
+
+            Using command = connection.CreateCommand()
+                command.CommandText =
+                    "SELECT pi.GstPercentage, COALESCE(SUM(pi.TaxableAmount), 0) AS TaxableAmount, COALESCE(SUM(pi.GstAmount), 0) AS GstAmount " &
+                    "FROM PurchaseItems pi " &
+                    "WHERE pi.PurchaseId = @PurchaseId " &
+                    "GROUP BY pi.GstPercentage " &
+                    "ORDER BY pi.GstPercentage ASC;"
+                command.AddParameter("@PurchaseId", purchaseId)
+
+                Using reader = command.ExecuteReader()
+                    While reader.Read()
+                        lines.Add(New PurchaseTaxSummaryLine With {
+                            .GstPercentage = Convert.ToDecimal(reader("GstPercentage"), CultureInfo.InvariantCulture),
+                            .TaxableAmount = Convert.ToDecimal(reader("TaxableAmount"), CultureInfo.InvariantCulture),
+                            .GstAmount = Convert.ToDecimal(reader("GstAmount"), CultureInfo.InvariantCulture)
+                        })
+                    End While
+                End Using
+            End Using
+
+            Return lines
+        End Function
 
         Private Sub InsertStockLedgerEntry(connection As DbConnection, transaction As DbTransaction, purchaseId As Integer, purchaseDate As DateTime, productSnapshot As InventoryProductSnapshot, item As PurchaseLineItem)
             Using command = connection.CreateCommand()
@@ -240,6 +382,44 @@ Namespace Repositories
 
                 Return Convert.ToString(result, CultureInfo.InvariantCulture)
             End Using
+        End Function
+
+        Private Function ToNullableStorageDate(dateValue As DateTime?) As Object
+            If Not dateValue.HasValue Then
+                Return DBNull.Value
+            End If
+
+            Return SqliteDateHelper.ToStorageDate(dateValue.Value.Date)
+        End Function
+
+        Private Function ParseDate(value As Object) As DateTime
+            Dim parsedDate As DateTime
+            If DateTime.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, DateTimeStyles.None, parsedDate) Then
+                Return parsedDate
+            End If
+
+            Return DateTime.Today
+        End Function
+
+        Private Function ParseNullableDate(value As Object) As DateTime?
+            If value Is Nothing OrElse value Is DBNull.Value Then
+                Return Nothing
+            End If
+
+            Dim parsedDate As DateTime
+            If DateTime.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, DateTimeStyles.None, parsedDate) Then
+                Return parsedDate
+            End If
+
+            Return Nothing
+        End Function
+
+        Private Function ConvertNullableString(value As Object) As String
+            If value Is Nothing OrElse value Is DBNull.Value Then
+                Return String.Empty
+            End If
+
+            Return Convert.ToString(value, CultureInfo.InvariantCulture)
         End Function
 
     End Class

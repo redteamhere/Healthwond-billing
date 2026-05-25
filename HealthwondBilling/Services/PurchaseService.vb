@@ -118,6 +118,11 @@ Namespace Services
         Private Sub NormalizeDraft(draft As PurchaseDraft)
             draft.PurchaseNumber = If(draft.PurchaseNumber, String.Empty).Trim().ToUpperInvariant()
             draft.SupplierInvoiceNumber = If(draft.SupplierInvoiceNumber, String.Empty).Trim().ToUpperInvariant()
+            draft.PurchaseOrderNumber = If(draft.PurchaseOrderNumber, String.Empty).Trim().ToUpperInvariant()
+            draft.PlaceOfSupply = If(draft.PlaceOfSupply, String.Empty).Trim()
+            draft.TransportName = If(draft.TransportName, String.Empty).Trim()
+            draft.EwayBillNumber = If(draft.EwayBillNumber, String.Empty).Trim().ToUpperInvariant()
+            draft.CaseCount = Math.Max(draft.CaseCount, 0)
             draft.Notes = If(draft.Notes, String.Empty).Trim()
 
             For Each item As PurchaseLineItem In draft.Items
@@ -142,6 +147,10 @@ Namespace Services
 
             If draft.SupplierId <= 0 Then
                 Return "Select a supplier."
+            End If
+
+            If draft.CaseCount < 0 Then
+                Return "Case count cannot be negative."
             End If
 
             If draft.Items Is Nothing OrElse draft.Items.Count = 0 Then

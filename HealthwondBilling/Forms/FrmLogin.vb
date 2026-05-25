@@ -15,6 +15,7 @@ Namespace Forms
         Private ReadOnly _supplierService As SupplierService
         Private ReadOnly _billingService As BillingService
         Private ReadOnly _purchaseService As PurchaseService
+        Private ReadOnly _purchasePrintService As PurchasePrintService
         Private ReadOnly _invoiceExportService As InvoiceExportService
         Private ReadOnly _reportService As ReportService
         Private ReadOnly _inventoryService As InventoryService
@@ -29,7 +30,7 @@ Namespace Forms
         Private ReadOnly btnExit As Button
         Private ReadOnly lblStatus As Label
 
-        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService)
+        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService)
             _authService = authService
             _dashboardService = dashboardService
             _productService = productService
@@ -37,6 +38,7 @@ Namespace Forms
             _supplierService = supplierService
             _billingService = billingService
             _purchaseService = purchaseService
+            _purchasePrintService = purchasePrintService
             _invoiceExportService = invoiceExportService
             _reportService = reportService
             _inventoryService = inventoryService
@@ -316,7 +318,7 @@ Namespace Forms
 
                 SessionManager.StartSession(result.User)
 
-                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _invoiceExportService, _reportService, _inventoryService, _stockOperationService, _settlementService, _settingsService)
+                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _purchasePrintService, _invoiceExportService, _reportService, _inventoryService, _stockOperationService, _settlementService, _settingsService)
                     Hide()
                     dashboard.ShowDialog(Me)
 
