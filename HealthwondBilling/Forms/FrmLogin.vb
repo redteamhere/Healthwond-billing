@@ -139,6 +139,8 @@ Namespace Forms
             _workspaceCard = BuildWorkspaceCard()
             _workspaceHost.Controls.Add(_workspaceShadow)
             _workspaceHost.Controls.Add(_workspaceCard)
+            _workspaceShadow.SendToBack()
+            _workspaceCard.BringToFront()
             AddHandler _workspaceHost.Resize, AddressOf WorkspaceHost_Resize
             Return _workspaceHost
         End Function
@@ -604,6 +606,7 @@ Namespace Forms
 
         Private Async Sub FrmLogin_Load(sender As Object, e As EventArgs)
             _clockTimer.Start()
+            WorkspaceHost_Resize(_workspaceHost, EventArgs.Empty)
             Await LoadStartupContextAsync()
         End Sub
 
@@ -702,6 +705,8 @@ Namespace Forms
 
             _workspaceCard.Location = New Point(left, top)
             _workspaceShadow.Location = New Point(left + 18, top + 18)
+            _workspaceShadow.SendToBack()
+            _workspaceCard.BringToFront()
         End Sub
 
         Private Sub ConfigureClassicActionButton(button As Button, text As String, isPrimary As Boolean, width As Integer)
