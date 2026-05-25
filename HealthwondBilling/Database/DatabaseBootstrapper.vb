@@ -8,16 +8,19 @@ Namespace Database
     Public Class DatabaseBootstrapper
 
         Private ReadOnly _connectionFactory As IDbConnectionFactory
+        Private ReadOnly _databaseFilePath As String
 
-        Public Sub New(connectionFactory As IDbConnectionFactory)
+        Public Sub New(connectionFactory As IDbConnectionFactory, databaseFilePath As String)
             _connectionFactory = connectionFactory
+            _databaseFilePath = databaseFilePath
         End Sub
 
         Public Sub Initialize()
             Dim databaseCreated As Boolean = False
 
-            If Not File.Exists(AppPaths.DatabaseFilePath) Then
-                SQLiteConnection.CreateFile(AppPaths.DatabaseFilePath)
+            If Not File.Exists(_databaseFilePath) Then
+                Directory.CreateDirectory(Path.GetDirectoryName(_databaseFilePath))
+                SQLiteConnection.CreateFile(_databaseFilePath)
                 databaseCreated = True
             End If
 
@@ -40,7 +43,7 @@ Namespace Database
             seedDataService.Seed()
 
             If databaseCreated Then
-                AppLogger.Info($"A new SQLite database was created at '{AppPaths.DatabaseFilePath}'.")
+                AppLogger.Info($"A new SQLite database was created at '{_databaseFilePath}'.")
             End If
 
             AppLogger.Info("Database bootstrap completed.")
