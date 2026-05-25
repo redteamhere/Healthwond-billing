@@ -8,6 +8,8 @@ Namespace Models
         Public Property CompanyDrugLicense As String = String.Empty
         Public Property InvoicePrefix As String = String.Empty
         Public Property PurchasePrefix As String = String.Empty
+        Public Property ReceiptPrefix As String = String.Empty
+        Public Property SupplierPaymentPrefix As String = String.Empty
         Public Property LowStockThreshold As Integer
         Public Property CurrencySymbol As String = String.Empty
         Public Property InvoiceTemplatePath As String = String.Empty

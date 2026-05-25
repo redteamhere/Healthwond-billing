@@ -10,6 +10,8 @@ Namespace Forms
         Inherits Form
 
         Private ReadOnly _settingsService As SettingsService
+        Private ReadOnly _maintenanceService As MaintenanceService
+
         Private ReadOnly txtCompanyName As New TextBox()
         Private ReadOnly txtCompanyAddress As New TextBox()
         Private ReadOnly txtCompanyPhone As New TextBox()
@@ -17,6 +19,8 @@ Namespace Forms
         Private ReadOnly txtCompanyDrugLicense As New TextBox()
         Private ReadOnly txtInvoicePrefix As New TextBox()
         Private ReadOnly txtPurchasePrefix As New TextBox()
+        Private ReadOnly txtReceiptPrefix As New TextBox()
+        Private ReadOnly txtSupplierPaymentPrefix As New TextBox()
         Private ReadOnly nudLowStockThreshold As New NumericUpDown()
         Private ReadOnly txtCurrencySymbol As New TextBox()
         Private ReadOnly txtInvoiceTemplatePath As New TextBox()
@@ -28,18 +32,33 @@ Namespace Forms
         Private ReadOnly btnOpenTemplates As New Button()
         Private ReadOnly btnOpenDataRoot As New Button()
         Private ReadOnly btnClose As New Button()
+        Private ReadOnly btnCreateBackup As New Button()
+        Private ReadOnly btnRestoreBackup As New Button()
+        Private ReadOnly btnOptimizeDatabase As New Button()
+        Private ReadOnly btnOpenBackups As New Button()
+        Private ReadOnly btnOpenInvoices As New Button()
+        Private ReadOnly btnOpenReports As New Button()
+        Private ReadOnly btnOpenLogs As New Button()
         Private ReadOnly lblStatus As New Label()
         Private ReadOnly lblResolvedTemplatePath As New Label()
+        Private ReadOnly lblDataRootPath As Label = CreatePathValueLabel()
+        Private ReadOnly lblDatabasePath As Label = CreatePathValueLabel()
+        Private ReadOnly lblBackupsPath As Label = CreatePathValueLabel()
+        Private ReadOnly lblInvoicesPath As Label = CreatePathValueLabel()
+        Private ReadOnly lblReportsPath As Label = CreatePathValueLabel()
+        Private ReadOnly lblLogsPath As Label = CreatePathValueLabel()
+        Private ReadOnly lblTemplateFolderPath As Label = CreatePathValueLabel()
 
         Private _isBusy As Boolean
 
-        Public Sub New(settingsService As SettingsService)
+        Public Sub New(settingsService As SettingsService, maintenanceService As MaintenanceService)
             _settingsService = settingsService
+            _maintenanceService = maintenanceService
 
             Text = "Healthwond Billing System - Settings"
             StartPosition = FormStartPosition.CenterParent
-            Size = New Size(1340, 840)
-            MinimumSize = New Size(1200, 760)
+            Size = New Size(1420, 880)
+            MinimumSize = New Size(1260, 780)
             BackColor = ThemePalette.AppBackground
             Font = New Font("Segoe UI", 10.0F, FontStyle.Regular)
             KeyPreview = True
@@ -87,7 +106,7 @@ Namespace Forms
 
             Dim subtitle As New Label With {
                 .Dock = DockStyle.Fill,
-                .Text = "Maintain company invoice identity, numbering prefixes, low stock threshold, currency display, and the GST invoice template used by export workflows.",
+                .Text = "Maintain company invoice identity, numbering prefixes, invoice template settings, and operational database maintenance from one admin workspace.",
                 .Font = New Font("Segoe UI", 10.5F, FontStyle.Regular),
                 .ForeColor = ThemePalette.TextMuted
             }
@@ -128,7 +147,7 @@ Namespace Forms
             }
 
             split.Panel1.Controls.Add(BuildCompanyCard())
-            split.Panel2.Controls.Add(BuildSystemCard())
+            split.Panel2.Controls.Add(BuildRightWorkspace())
             Return split
         End Function
 
@@ -169,7 +188,7 @@ Namespace Forms
 
             Dim note As New Label With {
                 .Dock = DockStyle.Fill,
-                .Text = "These values are used by Excel invoice generation, PDF export, and print preview.",
+                .Text = "These values are used across GST invoices, purchase printouts, PDF exports, and Excel template generation.",
                 .ForeColor = ThemePalette.TextMuted,
                 .Font = New Font("Segoe UI", 9.75F, FontStyle.Italic),
                 .TextAlign = ContentAlignment.TopLeft
@@ -180,6 +199,27 @@ Namespace Forms
             panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
             panel.Controls.Add(title)
             Return panel
+        End Function
+
+        Private Function BuildRightWorkspace() As Control
+            Dim layout As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill,
+                .ColumnCount = 1,
+                .RowCount = 2,
+                .BackColor = ThemePalette.AppBackground
+            }
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 50.0F))
+            layout.RowStyles.Add(New RowStyle(SizeType.Percent, 50.0F))
+
+            Dim systemCard As Control = BuildSystemCard()
+            systemCard.Margin = New Padding(0, 0, 0, 10)
+
+            Dim maintenanceCard As Control = BuildMaintenanceCard()
+            maintenanceCard.Margin = New Padding(0, 10, 0, 0)
+
+            layout.Controls.Add(systemCard, 0, 0)
+            layout.Controls.Add(maintenanceCard, 0, 1)
+            Return layout
         End Function
 
         Private Function BuildSystemCard() As Control
@@ -204,13 +244,15 @@ Namespace Forms
             editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 72))
             editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 72))
             editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 72))
-            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 120))
+            editor.RowStyles.Add(New RowStyle(SizeType.Absolute, 110))
             editor.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
             editor.Controls.Add(CreateInputHost("Invoice Prefix", txtInvoicePrefix), 0, 0)
             editor.Controls.Add(CreateInputHost("Purchase Prefix", txtPurchasePrefix), 1, 0)
-            editor.Controls.Add(CreateInputHost("Currency Symbol", txtCurrencySymbol), 0, 1)
-            editor.Controls.Add(CreateInputHost("Low Stock Threshold", nudLowStockThreshold), 1, 1)
+            editor.Controls.Add(CreateInputHost("Receipt Prefix", txtReceiptPrefix), 0, 1)
+            editor.Controls.Add(CreateInputHost("Supplier Payment Prefix", txtSupplierPaymentPrefix), 1, 1)
+            editor.Controls.Add(CreateInputHost("Currency Symbol", txtCurrencySymbol), 0, 2)
+            editor.Controls.Add(CreateInputHost("Low Stock Threshold", nudLowStockThreshold), 1, 2)
 
             Dim templateHost As New Panel With {.Dock = DockStyle.Fill, .Padding = New Padding(0, 0, 12, 10)}
             Dim templateLabel As New Label With {
@@ -244,7 +286,7 @@ Namespace Forms
 
             templateHost.Controls.Add(templateLayout)
             templateHost.Controls.Add(templateLabel)
-            editor.Controls.Add(templateHost, 0, 2)
+            editor.Controls.Add(templateHost, 0, 3)
             editor.SetColumnSpan(templateHost, 2)
 
             Dim resolvedHost As New Panel With {.Dock = DockStyle.Fill, .Padding = New Padding(0, 0, 12, 10)}
@@ -262,10 +304,103 @@ Namespace Forms
 
             resolvedHost.Controls.Add(lblResolvedTemplatePath)
             resolvedHost.Controls.Add(resolvedLabel)
-            editor.Controls.Add(resolvedHost, 0, 3)
+            editor.Controls.Add(resolvedHost, 0, 4)
             editor.SetColumnSpan(resolvedHost, 2)
 
             panel.Controls.Add(UiStyler.CreateScrollableHost(editor))
+            panel.Controls.Add(title)
+            Return panel
+        End Function
+
+        Private Function BuildMaintenanceCard() As Control
+            Dim panel As New Panel With {.Dock = DockStyle.Fill, .BackColor = Color.White}
+            UiStyler.StyleCard(panel)
+
+            Dim title As New Label With {
+                .Dock = DockStyle.Top,
+                .Height = 30,
+                .Text = "Maintenance and storage",
+                .Font = New Font("Segoe UI Semibold", 14.0F, FontStyle.Bold),
+                .ForeColor = ThemePalette.TextPrimary
+            }
+
+            Dim shell As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill,
+                .ColumnCount = 1,
+                .Padding = New Padding(0, 14, 0, 0)
+            }
+            shell.RowStyles.Add(New RowStyle(SizeType.Absolute, 54))
+            shell.RowStyles.Add(New RowStyle(SizeType.Absolute, 254))
+            shell.RowStyles.Add(New RowStyle(SizeType.Absolute, 164))
+            shell.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
+
+            Dim intro As New Label With {
+                .Dock = DockStyle.Fill,
+                .Text = "Create verified SQLite backups, restore a selected backup with restart protection, optimize the live database, and open the operational folders used by invoices, reports, and logs.",
+                .ForeColor = ThemePalette.TextMuted,
+                .Font = New Font("Segoe UI", 9.75F, FontStyle.Regular),
+                .TextAlign = ContentAlignment.TopLeft
+            }
+            shell.Controls.Add(intro, 0, 0)
+
+            Dim pathsTable As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill,
+                .ColumnCount = 2,
+                .RowCount = 7,
+                .BackColor = Color.Transparent
+            }
+            pathsTable.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 152))
+            pathsTable.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+
+            AddPathRow(pathsTable, 0, "Data Root", lblDataRootPath)
+            AddPathRow(pathsTable, 1, "Database File", lblDatabasePath)
+            AddPathRow(pathsTable, 2, "Backups Folder", lblBackupsPath)
+            AddPathRow(pathsTable, 3, "Invoices Folder", lblInvoicesPath)
+            AddPathRow(pathsTable, 4, "Reports Folder", lblReportsPath)
+            AddPathRow(pathsTable, 5, "Logs Folder", lblLogsPath)
+            AddPathRow(pathsTable, 6, "Templates Folder", lblTemplateFolderPath)
+            shell.Controls.Add(pathsTable, 0, 1)
+
+            Dim buttonGrid As New TableLayoutPanel With {
+                .Dock = DockStyle.Fill,
+                .ColumnCount = 3,
+                .RowCount = 3,
+                .Margin = New Padding(0, 6, 0, 0)
+            }
+            buttonGrid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333F))
+            buttonGrid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333F))
+            buttonGrid.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 33.3333F))
+            buttonGrid.RowStyles.Add(New RowStyle(SizeType.Absolute, 48))
+            buttonGrid.RowStyles.Add(New RowStyle(SizeType.Absolute, 48))
+            buttonGrid.RowStyles.Add(New RowStyle(SizeType.Absolute, 48))
+
+            ConfigureActionButton(btnCreateBackup, "Create Backup", AddressOf btnCreateBackup_Click, True)
+            ConfigureActionButton(btnRestoreBackup, "Restore Backup", AddressOf btnRestoreBackup_Click, False)
+            ConfigureActionButton(btnOptimizeDatabase, "Optimize Database", AddressOf btnOptimizeDatabase_Click, False)
+            ConfigureActionButton(btnOpenBackups, "Open Backups", AddressOf btnOpenBackups_Click, False)
+            ConfigureActionButton(btnOpenInvoices, "Open Invoices", AddressOf btnOpenInvoices_Click, False)
+            ConfigureActionButton(btnOpenReports, "Open Reports", AddressOf btnOpenReports_Click, False)
+            ConfigureActionButton(btnOpenLogs, "Open Logs", AddressOf btnOpenLogs_Click, False)
+
+            buttonGrid.Controls.Add(btnCreateBackup, 0, 0)
+            buttonGrid.Controls.Add(btnRestoreBackup, 1, 0)
+            buttonGrid.Controls.Add(btnOptimizeDatabase, 2, 0)
+            buttonGrid.Controls.Add(btnOpenBackups, 0, 1)
+            buttonGrid.Controls.Add(btnOpenInvoices, 1, 1)
+            buttonGrid.Controls.Add(btnOpenReports, 2, 1)
+            buttonGrid.Controls.Add(btnOpenLogs, 0, 2)
+            shell.Controls.Add(buttonGrid, 0, 2)
+
+            Dim footerNote As New Label With {
+                .Dock = DockStyle.Fill,
+                .Text = "Restoring a backup replaces the active SQLite database after validation and creates a pre-restore safeguard copy automatically.",
+                .ForeColor = ThemePalette.TextMuted,
+                .Font = New Font("Segoe UI", 9.25F, FontStyle.Italic),
+                .TextAlign = ContentAlignment.TopLeft
+            }
+            shell.Controls.Add(footerNote, 0, 3)
+
+            panel.Controls.Add(UiStyler.CreateScrollableHost(shell))
             panel.Controls.Add(title)
             Return panel
         End Function
@@ -287,6 +422,34 @@ Namespace Forms
             Return panel
         End Function
 
+        Private Shared Function CreatePathValueLabel() As Label
+            Return New Label With {
+                .Dock = DockStyle.Fill,
+                .Padding = New Padding(10, 7, 10, 7),
+                .BorderStyle = BorderStyle.FixedSingle,
+                .BackColor = Color.White,
+                .ForeColor = ThemePalette.TextMuted,
+                .Font = New Font("Consolas", 9.0F, FontStyle.Regular),
+                .AutoEllipsis = True,
+                .TextAlign = ContentAlignment.MiddleLeft
+            }
+        End Function
+
+        Private Sub AddPathRow(pathsTable As TableLayoutPanel, rowIndex As Integer, caption As String, valueLabel As Label)
+            pathsTable.RowStyles.Add(New RowStyle(SizeType.Absolute, 36))
+
+            Dim captionLabel As New Label With {
+                .Dock = DockStyle.Fill,
+                .Text = caption,
+                .Font = New Font("Segoe UI Semibold", 9.5F, FontStyle.Bold),
+                .ForeColor = ThemePalette.TextPrimary,
+                .TextAlign = ContentAlignment.MiddleLeft
+            }
+
+            pathsTable.Controls.Add(captionLabel, 0, rowIndex)
+            pathsTable.Controls.Add(valueLabel, 1, rowIndex)
+        End Sub
+
         Private Sub ConfigureToolbarButton(button As Button, text As String, handler As EventHandler, isPrimary As Boolean, width As Integer)
             If isPrimary Then
                 UiStyler.StylePrimaryButton(button)
@@ -299,8 +462,33 @@ Namespace Forms
             AddHandler button.Click, handler
         End Sub
 
+        Private Sub ConfigureActionButton(button As Button, text As String, handler As EventHandler, isPrimary As Boolean)
+            If isPrimary Then
+                UiStyler.StylePrimaryButton(button)
+            Else
+                UiStyler.StyleSecondaryButton(button)
+            End If
+
+            button.Text = text
+            button.Dock = DockStyle.Fill
+            button.Margin = New Padding(0, 0, 10, 10)
+            AddHandler button.Click, handler
+        End Sub
+
         Private Sub ConfigureEditors()
-            For Each editorTextBox As TextBox In New TextBox() {txtCompanyName, txtCompanyAddress, txtCompanyPhone, txtCompanyGstin, txtCompanyDrugLicense, txtInvoicePrefix, txtPurchasePrefix, txtCurrencySymbol, txtInvoiceTemplatePath}
+            For Each editorTextBox As TextBox In New TextBox() {
+                txtCompanyName,
+                txtCompanyAddress,
+                txtCompanyPhone,
+                txtCompanyGstin,
+                txtCompanyDrugLicense,
+                txtInvoicePrefix,
+                txtPurchasePrefix,
+                txtReceiptPrefix,
+                txtSupplierPaymentPrefix,
+                txtCurrencySymbol,
+                txtInvoiceTemplatePath
+            }
                 editorTextBox.BorderStyle = BorderStyle.FixedSingle
                 UiStyler.StyleInput(editorTextBox)
             Next
@@ -320,6 +508,7 @@ Namespace Forms
         End Sub
 
         Private Async Sub FrmSettings_Load(sender As Object, e As EventArgs)
+            UpdatePathLabels()
             Await LoadSettingsAsync()
         End Sub
 
@@ -346,6 +535,8 @@ Namespace Forms
             txtCompanyDrugLicense.Text = profile.CompanyDrugLicense
             txtInvoicePrefix.Text = profile.InvoicePrefix
             txtPurchasePrefix.Text = profile.PurchasePrefix
+            txtReceiptPrefix.Text = profile.ReceiptPrefix
+            txtSupplierPaymentPrefix.Text = profile.SupplierPaymentPrefix
             nudLowStockThreshold.Value = Math.Min(nudLowStockThreshold.Maximum, profile.LowStockThreshold)
             txtCurrencySymbol.Text = profile.CurrencySymbol
             txtInvoiceTemplatePath.Text = profile.InvoiceTemplatePath
@@ -361,6 +552,8 @@ Namespace Forms
                 .CompanyDrugLicense = txtCompanyDrugLicense.Text,
                 .InvoicePrefix = txtInvoicePrefix.Text,
                 .PurchasePrefix = txtPurchasePrefix.Text,
+                .ReceiptPrefix = txtReceiptPrefix.Text,
+                .SupplierPaymentPrefix = txtSupplierPaymentPrefix.Text,
                 .LowStockThreshold = Decimal.ToInt32(nudLowStockThreshold.Value),
                 .CurrencySymbol = txtCurrencySymbol.Text,
                 .InvoiceTemplatePath = txtInvoiceTemplatePath.Text
@@ -409,32 +602,106 @@ Namespace Forms
         End Sub
 
         Private Sub btnOpenTemplates_Click(sender As Object, e As EventArgs)
+            Dim profile As AppSettingsProfile = ReadProfileFromForm()
+            Dim resolvedPath As String = _settingsService.GetResolvedTemplatePath(profile)
+            Dim folderPath As String = Path.GetDirectoryName(resolvedPath)
+            OpenFolderPath(folderPath, "Opened template folder.", "Template folder could not be opened.")
+        End Sub
+
+        Private Sub btnOpenDataRoot_Click(sender As Object, e As EventArgs)
+            OpenFolderPath(AppPaths.DataRootDirectory, "Opened application data folder.", "Application data folder could not be opened.")
+        End Sub
+
+        Private Async Sub btnCreateBackup_Click(sender As Object, e As EventArgs)
+            SetBusy(True, "Creating database backup...")
+            Dim result As FileOperationResult = Await _maintenanceService.CreateDatabaseBackupAsync()
+            SetBusy(False)
+
+            If result.IsSuccess Then
+                ShowStatus($"{result.Message} File: {result.FilePath}", False)
+                UpdatePathLabels()
+            Else
+                ShowStatus(result.Message, True)
+            End If
+        End Sub
+
+        Private Async Sub btnRestoreBackup_Click(sender As Object, e As EventArgs)
+            Using dialog As New OpenFileDialog()
+                dialog.Filter = "SQLite Database (*.db)|*.db|All Files (*.*)|*.*"
+                dialog.InitialDirectory = _maintenanceService.GetDefaultBackupDirectory()
+                dialog.Multiselect = False
+
+                If dialog.ShowDialog(Me) <> DialogResult.OK Then
+                    Return
+                End If
+
+                Dim restorePath As String = dialog.FileName
+                Dim confirmResult As DialogResult =
+                    MessageBox.Show(
+                        $"Restore the backup '{Path.GetFileName(restorePath)}'? The current database will be replaced and the application will need to restart.",
+                        "Confirm Restore",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning)
+
+                If confirmResult <> DialogResult.Yes Then
+                    Return
+                End If
+
+                SetBusy(True, "Restoring database backup...")
+                Dim result As EntityOperationResult = Await _maintenanceService.RestoreDatabaseBackupAsync(restorePath)
+                SetBusy(False)
+                ShowStatus(result.Message, Not result.IsSuccess)
+
+                If result.IsSuccess Then
+                    Dim restartResult As DialogResult =
+                        MessageBox.Show(
+                            result.Message & Environment.NewLine & Environment.NewLine & "Restart the application now?",
+                            "Restart Required",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Information)
+
+                    If restartResult = DialogResult.Yes Then
+                        Application.Restart()
+                        Environment.Exit(0)
+                    End If
+                End If
+            End Using
+        End Sub
+
+        Private Async Sub btnOptimizeDatabase_Click(sender As Object, e As EventArgs)
+            SetBusy(True, "Optimizing database...")
+            Dim result As EntityOperationResult = Await _maintenanceService.OptimizeDatabaseAsync()
+            SetBusy(False)
+            ShowStatus(result.Message, Not result.IsSuccess)
+        End Sub
+
+        Private Sub btnOpenBackups_Click(sender As Object, e As EventArgs)
+            OpenFolderPath(AppPaths.BackupsDirectory, "Opened backup folder.", "Backup folder could not be opened.")
+        End Sub
+
+        Private Sub btnOpenInvoices_Click(sender As Object, e As EventArgs)
+            OpenFolderPath(AppPaths.GeneratedInvoicesDirectory, "Opened invoice folder.", "Invoice folder could not be opened.")
+        End Sub
+
+        Private Sub btnOpenReports_Click(sender As Object, e As EventArgs)
+            OpenFolderPath(AppPaths.ReportsDirectory, "Opened report folder.", "Report folder could not be opened.")
+        End Sub
+
+        Private Sub btnOpenLogs_Click(sender As Object, e As EventArgs)
+            OpenFolderPath(AppPaths.LogsDirectory, "Opened logs folder.", "Logs folder could not be opened.")
+        End Sub
+
+        Private Sub OpenFolderPath(folderPath As String, successMessage As String, errorMessage As String)
             Try
-                Dim profile As AppSettingsProfile = ReadProfileFromForm()
-                Dim resolvedPath As String = _settingsService.GetResolvedTemplatePath(profile)
-                Dim folderPath As String = Path.GetDirectoryName(resolvedPath)
                 Directory.CreateDirectory(folderPath)
                 Process.Start(New ProcessStartInfo With {
                     .FileName = folderPath,
                     .UseShellExecute = True
                 })
-                ShowStatus("Opened template folder.", False)
+                ShowStatus(successMessage, False)
             Catch ex As Exception
-                AppLogger.Error("Template folder open failed.", ex)
-                ShowStatus("Template folder could not be opened.", True)
-            End Try
-        End Sub
-
-        Private Sub btnOpenDataRoot_Click(sender As Object, e As EventArgs)
-            Try
-                Process.Start(New ProcessStartInfo With {
-                    .FileName = AppPaths.DataRootDirectory,
-                    .UseShellExecute = True
-                })
-                ShowStatus("Opened application data folder.", False)
-            Catch ex As Exception
-                AppLogger.Error("Application data folder open failed.", ex)
-                ShowStatus("Application data folder could not be opened.", True)
+                AppLogger.Error(errorMessage, ex)
+                ShowStatus(errorMessage, True)
             End Try
         End Sub
 
@@ -452,6 +719,8 @@ Namespace Forms
             txtCompanyDrugLicense.Enabled = Not isBusy
             txtInvoicePrefix.Enabled = Not isBusy
             txtPurchasePrefix.Enabled = Not isBusy
+            txtReceiptPrefix.Enabled = Not isBusy
+            txtSupplierPaymentPrefix.Enabled = Not isBusy
             nudLowStockThreshold.Enabled = Not isBusy
             txtCurrencySymbol.Enabled = Not isBusy
             txtInvoiceTemplatePath.Enabled = Not isBusy
@@ -461,6 +730,13 @@ Namespace Forms
             btnSave.Enabled = Not isBusy
             btnOpenTemplates.Enabled = Not isBusy
             btnOpenDataRoot.Enabled = Not isBusy
+            btnCreateBackup.Enabled = Not isBusy
+            btnRestoreBackup.Enabled = Not isBusy
+            btnOptimizeDatabase.Enabled = Not isBusy
+            btnOpenBackups.Enabled = Not isBusy
+            btnOpenInvoices.Enabled = Not isBusy
+            btnOpenReports.Enabled = Not isBusy
+            btnOpenLogs.Enabled = Not isBusy
             btnClose.Enabled = Not isBusy
 
             If isBusy Then
@@ -477,12 +753,31 @@ Namespace Forms
         Private Sub UpdateResolvedTemplateLabel()
             Dim profile As AppSettingsProfile = ReadProfileFromForm()
             lblResolvedTemplatePath.Text = _settingsService.GetResolvedTemplatePath(profile)
+            UpdatePathLabels()
+        End Sub
+
+        Private Sub UpdatePathLabels()
+            AppPaths.EnsureDirectories()
+
+            lblDataRootPath.Text = AppPaths.DataRootDirectory
+            lblDatabasePath.Text = AppPaths.DatabaseFilePath
+            lblBackupsPath.Text = AppPaths.BackupsDirectory
+            lblInvoicesPath.Text = AppPaths.GeneratedInvoicesDirectory
+            lblReportsPath.Text = AppPaths.ReportsDirectory
+            lblLogsPath.Text = AppPaths.LogsDirectory
+
+            Dim profile As AppSettingsProfile = ReadProfileFromForm()
+            Dim resolvedTemplatePath As String = _settingsService.GetResolvedTemplatePath(profile)
+            lblTemplateFolderPath.Text = Path.GetDirectoryName(resolvedTemplatePath)
         End Sub
 
         Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
             Select Case keyData
                 Case Keys.Control Or Keys.S
                     btnSave.PerformClick()
+                    Return True
+                Case Keys.Control Or Keys.B
+                    btnCreateBackup.PerformClick()
                     Return True
                 Case Keys.F5
                     btnReload.PerformClick()

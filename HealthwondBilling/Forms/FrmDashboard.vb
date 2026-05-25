@@ -21,6 +21,7 @@ Namespace Forms
         Private ReadOnly _stockOperationService As StockOperationService
         Private ReadOnly _settlementService As SettlementService
         Private ReadOnly _settingsService As SettingsService
+        Private ReadOnly _maintenanceService As MaintenanceService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -36,7 +37,7 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService, maintenanceService As MaintenanceService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
@@ -50,6 +51,7 @@ Namespace Forms
             _stockOperationService = stockOperationService
             _settlementService = settlementService
             _settingsService = settingsService
+            _maintenanceService = maintenanceService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -267,8 +269,8 @@ Namespace Forms
                     "- Invoice history now supports saved invoice search, reopen-for-edit, re-export, preview, print, and document access.",
                     "- Stock operations now support purchase returns and manual stock adjustments with ledger posting and payable corrections.",
                     "- Settlements now support customer collections and supplier payment posting with balance history.",
-                    "- Settings now support company profile, prefixes, low-stock threshold, currency, and invoice template control.",
-                    "- Advanced analytics and final operational refinements will follow in the next modules."),
+                    "- Settings now support company profile, operational prefixes, template control, backup and restore, and database maintenance.",
+                    "- Remaining work is focused on final refinement rather than missing core business flows."),
                 .TextAlign = ContentAlignment.TopLeft
             }
 
@@ -426,7 +428,7 @@ Namespace Forms
         End Sub
 
         Private Sub OpenSettingsDialog()
-            Using form As New FrmSettings(_settingsService)
+            Using form As New FrmSettings(_settingsService, _maintenanceService)
                 form.ShowDialog(Me)
             End Using
         End Sub

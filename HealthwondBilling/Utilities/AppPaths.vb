@@ -49,6 +49,12 @@ Namespace Utilities
             End Get
         End Property
 
+        Public Shared ReadOnly Property BackupsDirectory As String
+            Get
+                Return Path.Combine(DataRootDirectory, "Backups")
+            End Get
+        End Property
+
         Public Shared ReadOnly Property TemplatesDirectory As String
             Get
                 Return Path.Combine(BaseDirectory, "Templates")
@@ -73,6 +79,7 @@ Namespace Utilities
             Directory.CreateDirectory(LogsDirectory)
             Directory.CreateDirectory(GeneratedInvoicesDirectory)
             Directory.CreateDirectory(ReportsDirectory)
+            Directory.CreateDirectory(BackupsDirectory)
             Directory.CreateDirectory(TemplatesDirectory)
             Directory.CreateDirectory(AssetsDirectory)
         End Sub

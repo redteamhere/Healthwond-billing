@@ -18,6 +18,8 @@ Namespace Repositories
                 {"CompanyDrugLicense", "Company drug license displayed on invoices."},
                 {"InvoicePrefix", "Prefix for auto-generated invoice numbers."},
                 {"PurchasePrefix", "Prefix for auto-generated purchase numbers."},
+                {"ReceiptPrefix", "Prefix for auto-generated customer collection receipt numbers."},
+                {"SupplierPaymentPrefix", "Prefix for auto-generated supplier payment numbers."},
                 {"LowStockThreshold", "Default low stock alert threshold."},
                 {"CurrencySymbol", "Default invoice currency symbol."},
                 {"InvoiceTemplatePath", "Configured GST invoice template path."}
@@ -53,6 +55,8 @@ Namespace Repositories
                 .CompanyDrugLicense = GetValue(values, "CompanyDrugLicense", "DL-HWB-2024-01"),
                 .InvoicePrefix = GetValue(values, "InvoicePrefix", "HWB"),
                 .PurchasePrefix = GetValue(values, "PurchasePrefix", "PUR"),
+                .ReceiptPrefix = GetValue(values, "ReceiptPrefix", "RCPT"),
+                .SupplierPaymentPrefix = GetValue(values, "SupplierPaymentPrefix", "SPAY"),
                 .LowStockThreshold = ParseInteger(GetValue(values, "LowStockThreshold", "10"), 10),
                 .CurrencySymbol = GetValue(values, "CurrencySymbol", "Rs."),
                 .InvoiceTemplatePath = GetValue(values, "InvoiceTemplatePath", IO.Path.Combine("Templates", "GSTInvoiceTemplate.xlsx"))
@@ -71,6 +75,8 @@ Namespace Repositories
                     UpsertSetting(connection, transaction, "CompanyDrugLicense", profile.CompanyDrugLicense)
                     UpsertSetting(connection, transaction, "InvoicePrefix", profile.InvoicePrefix)
                     UpsertSetting(connection, transaction, "PurchasePrefix", profile.PurchasePrefix)
+                    UpsertSetting(connection, transaction, "ReceiptPrefix", profile.ReceiptPrefix)
+                    UpsertSetting(connection, transaction, "SupplierPaymentPrefix", profile.SupplierPaymentPrefix)
                     UpsertSetting(connection, transaction, "LowStockThreshold", profile.LowStockThreshold.ToString(CultureInfo.InvariantCulture))
                     UpsertSetting(connection, transaction, "CurrencySymbol", profile.CurrencySymbol)
                     UpsertSetting(connection, transaction, "InvoiceTemplatePath", profile.InvoiceTemplatePath)

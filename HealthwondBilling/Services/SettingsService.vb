@@ -56,6 +56,8 @@ Namespace Services
             profile.CompanyDrugLicense = If(profile.CompanyDrugLicense, String.Empty).Trim().ToUpperInvariant()
             profile.InvoicePrefix = If(profile.InvoicePrefix, String.Empty).Trim().ToUpperInvariant()
             profile.PurchasePrefix = If(profile.PurchasePrefix, String.Empty).Trim().ToUpperInvariant()
+            profile.ReceiptPrefix = If(profile.ReceiptPrefix, String.Empty).Trim().ToUpperInvariant()
+            profile.SupplierPaymentPrefix = If(profile.SupplierPaymentPrefix, String.Empty).Trim().ToUpperInvariant()
             profile.CurrencySymbol = If(profile.CurrencySymbol, String.Empty).Trim()
             profile.InvoiceTemplatePath = If(profile.InvoiceTemplatePath, String.Empty).Trim()
 
@@ -75,6 +77,14 @@ Namespace Services
 
             If Not InputValidator.IsRequiredTextProvided(profile.PurchasePrefix) Then
                 Return "Purchase prefix is required."
+            End If
+
+            If Not InputValidator.IsRequiredTextProvided(profile.ReceiptPrefix) Then
+                Return "Receipt prefix is required."
+            End If
+
+            If Not InputValidator.IsRequiredTextProvided(profile.SupplierPaymentPrefix) Then
+                Return "Supplier payment prefix is required."
             End If
 
             If profile.LowStockThreshold < 0 Then
