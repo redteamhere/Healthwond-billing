@@ -122,6 +122,9 @@ Namespace Services
                     End If
 
                     draft.Summary = CalculateTotals(draft.Items, draft.AmountPaid)
+                    If draft.Summary.AmountPaid > draft.Summary.NetAmount Then
+                        Return InvoiceSaveResult.Failure("Amount paid cannot exceed the invoice net amount.")
+                    End If
 
                     Try
                         Dim invoiceId As Integer

@@ -1,6 +1,6 @@
 # Healthwond Billing System
 
-Modules 1 to 11 deliver the foundation, SQLite bootstrap, authentication, dashboard shell, seeded sample data, master-data screens, billing, purchase entry, invoice export/print workflows, reporting, live admin settings management, a dedicated inventory workspace, persisted invoice history management, stock operations for returns and manual adjustments, and settlement workflows for receivables and payables.
+Modules 1 to 13 deliver the foundation, SQLite bootstrap, authentication, dashboard shell, seeded sample data, master-data screens, billing, purchase entry, invoice export/print workflows, reporting, live admin settings management, a dedicated inventory workspace, persisted invoice history management, stock operations for returns and manual adjustments, settlement workflows for receivables and payables, and an accounting workspace with automatic financial posting.
 
 ## Current scope
 
@@ -17,11 +17,12 @@ Modules 1 to 11 deliver the foundation, SQLite bootstrap, authentication, dashbo
 - Purchase screen with supplier management, purchase line entry, auto purchase numbering, live GST totals, inventory batch stock-in, and stock ledger posting
 - Template-based GST invoice generation with ClosedXML, PDF export, print preview, instant print, and automatic `Templates/GSTInvoiceTemplate.xlsx` creation
 - Reports screen with date-filtered sales, purchases, GST, stock, customer outstanding, and estimated profit views plus Excel export to `%LocalAppData%\HealthwondBilling\Reports`
-- Settings screen for company identity, prefixes, currency symbol, low stock threshold, and configurable invoice template path with template bootstrap support
+- Settings screen for company identity, prefixes, currency symbol, low stock threshold, configurable invoice template path, backup/restore actions, and database maintenance shortcuts
 - Inventory screen for current stock, batch stock, expiry watchlists, low stock alerts, stock-ledger history, and Excel export
 - Invoice history screen for saved invoice search, reopen-for-edit, re-export, print preview, instant print, and generated document access
 - Stock operations screen for purchase returns, supplier payable correction, manual stock adjustments, and stock-ledger updates
 - Settlements screen for customer collections, supplier payments, auto-generated receipt/payment numbers, outstanding-balance correction, and searchable history
+- Accounts screen with account groups, ledgers, manual vouchers, day-book history, ledger statements, startup backfill of operational vouchers, and automatic posting from invoices, purchases, purchase returns, customer collections, and supplier payments
 
 ## Default demo credentials
 
@@ -52,6 +53,6 @@ dotnet run --project .\HealthwondBilling\HealthwondBilling.vbproj
 
 ## Next modules
 
-1. Advanced analytics and settlement aging views
-2. LAN-ready concurrency and conflict-handling improvements
-3. Final deployment polish, backup flows, and operational hardening
+1. User administration and password maintenance from inside the app
+2. Sales-return, replacement, and breakage/expiry commercial workflows
+3. LAN-ready concurrency and conflict-handling improvements

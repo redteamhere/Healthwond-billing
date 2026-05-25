@@ -4,7 +4,7 @@ Professional Windows desktop pharmaceutical billing and inventory software built
 
 ## Current module
 
-Modules 1 to 11 are complete:
+Modules 1 to 13 are complete:
 
 - Project scaffold with layered folders
 - SQLite schema bootstrap on first run
@@ -17,11 +17,12 @@ Modules 1 to 11 are complete:
 - Purchase workflow with supplier master maintenance, purchase numbering, batch-wise stock-in, stock ledger posting, and supplier outstanding updates
 - Invoice document workflow with generated Excel GST invoices, PDF export, print preview, instant print, and automatic template bootstrap
 - Reports workflow with live sales, purchase, GST, stock, outstanding, and profit summary views plus Excel export
-- Admin settings workflow with company profile, prefixes, low-stock threshold, currency, and configurable invoice template path management
+- Admin settings workflow with company profile, prefixes, low-stock threshold, currency, invoice template management, backup/restore, and database maintenance
 - Inventory workflow with current stock, batch stock, expiry watchlists, low stock alerts, stock-ledger history, and Excel export
 - Invoice history workflow with saved invoice search, reopen-for-edit, re-export, preview, print, and generated file access
 - Stock operations workflow with purchase returns, payable correction, manual stock adjustments, and ledger posting
 - Settlement workflow with customer collections, supplier payment posting, auto numbering, balance updates, and searchable payment history
+- Accounts workflow with chart-of-accounts foundation, ledger master, manual vouchers, day-book review, ledger statements, and automatic accounting posted from billing, purchases, returns, and settlements
 - Clean build through `dotnet build`
 
 ## Solution layout
@@ -53,4 +54,4 @@ dotnet run --project .\HealthwondBilling\HealthwondBilling.vbproj
 
 - Runtime data is stored under `%LocalAppData%\HealthwondBilling`
 - The detailed module README is in `HealthwondBilling/README.md`
-- Next modules will cover advanced analytics, settlement aging, and multi-user readiness
+- Next modules will cover user administration, sales-return and replacement workflows, and multi-user readiness

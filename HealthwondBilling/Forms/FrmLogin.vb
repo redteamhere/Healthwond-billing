@@ -23,6 +23,7 @@ Namespace Forms
         Private ReadOnly _settlementService As SettlementService
         Private ReadOnly _settingsService As SettingsService
         Private ReadOnly _maintenanceService As MaintenanceService
+        Private ReadOnly _accountingService As AccountingService
 
         Private ReadOnly txtUsername As TextBox
         Private ReadOnly txtPassword As TextBox
@@ -31,7 +32,7 @@ Namespace Forms
         Private ReadOnly btnExit As Button
         Private ReadOnly lblStatus As Label
 
-        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService, maintenanceService As MaintenanceService)
+        Public Sub New(authService As AuthService, dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService, maintenanceService As MaintenanceService, accountingService As AccountingService)
             _authService = authService
             _dashboardService = dashboardService
             _productService = productService
@@ -47,6 +48,7 @@ Namespace Forms
             _settlementService = settlementService
             _settingsService = settingsService
             _maintenanceService = maintenanceService
+            _accountingService = accountingService
 
             Text = "Healthwond Billing System - Login"
             StartPosition = FormStartPosition.CenterScreen
@@ -320,7 +322,7 @@ Namespace Forms
 
                 SessionManager.StartSession(result.User)
 
-                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _purchasePrintService, _invoiceExportService, _reportService, _inventoryService, _stockOperationService, _settlementService, _settingsService, _maintenanceService)
+                Using dashboard As New FrmDashboard(_dashboardService, _productService, _customerService, _supplierService, _billingService, _purchaseService, _purchasePrintService, _invoiceExportService, _reportService, _inventoryService, _stockOperationService, _settlementService, _settingsService, _maintenanceService, _accountingService)
                     Hide()
                     dashboard.ShowDialog(Me)
 

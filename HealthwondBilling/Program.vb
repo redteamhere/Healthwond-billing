@@ -35,6 +35,7 @@ Friend Module Program
             Dim stockOperationRepository As New StockOperationRepository(connectionFactory)
             Dim paymentRepository As New PaymentRepository(connectionFactory)
             Dim settingsRepository As New SettingsRepository(connectionFactory)
+            Dim accountingRepository As New AccountingRepository(connectionFactory)
             Dim authService As New AuthService(userRepository)
             Dim dashboardService As New DashboardService(connectionFactory)
             Dim productService As New ProductService(productRepository)
@@ -48,12 +49,14 @@ Friend Module Program
             Dim settlementService As New SettlementService(paymentRepository)
             Dim settingsService As New SettingsService(settingsRepository)
             Dim maintenanceService As New MaintenanceService(connectionFactory)
+            Dim accountingService As New AccountingService(accountingRepository)
             Dim settingsProfile As AppSettingsProfile = settingsRepository.GetProfile()
             InvoiceTemplateGenerator.EnsureTemplateExists(settingsService.GetResolvedTemplatePath(settingsProfile))
             Dim invoiceExportService As New InvoiceExportService(invoiceRepository, settingsRepository)
             Dim purchasePrintService As New PurchasePrintService(purchaseRepository)
+            accountingRepository.SynchronizeOperationalVouchers()
 
-            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService, purchasePrintService, invoiceExportService, reportService, inventoryService, stockOperationService, settlementService, settingsService, maintenanceService))
+            Application.Run(New FrmLogin(authService, dashboardService, productService, customerService, supplierService, billingService, purchaseService, purchasePrintService, invoiceExportService, reportService, inventoryService, stockOperationService, settlementService, settingsService, maintenanceService, accountingService))
         Catch ex As Exception
             AppLogger.Error("Application bootstrap failed.", ex)
             MessageBox.Show(

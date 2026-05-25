@@ -22,6 +22,7 @@ Namespace Forms
         Private ReadOnly _settlementService As SettlementService
         Private ReadOnly _settingsService As SettingsService
         Private ReadOnly _maintenanceService As MaintenanceService
+        Private ReadOnly _accountingService As AccountingService
         Private ReadOnly _clockTimer As Timer
 
         Private lblGreeting As Label
@@ -37,7 +38,7 @@ Namespace Forms
 
         Public Property RequestedLogout As Boolean
 
-        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService, maintenanceService As MaintenanceService)
+        Public Sub New(dashboardService As DashboardService, productService As ProductService, customerService As CustomerService, supplierService As SupplierService, billingService As BillingService, purchaseService As PurchaseService, purchasePrintService As PurchasePrintService, invoiceExportService As InvoiceExportService, reportService As ReportService, inventoryService As InventoryService, stockOperationService As StockOperationService, settlementService As SettlementService, settingsService As SettingsService, maintenanceService As MaintenanceService, accountingService As AccountingService)
             _dashboardService = dashboardService
             _productService = productService
             _customerService = customerService
@@ -52,6 +53,7 @@ Namespace Forms
             _settlementService = settlementService
             _settingsService = settingsService
             _maintenanceService = maintenanceService
+            _accountingService = accountingService
 
             Text = "Healthwond Billing System - Dashboard"
             WindowState = FormWindowState.Maximized
@@ -121,6 +123,7 @@ Namespace Forms
             navPanel.Controls.Add(CreateSidebarButton("F8  Invoice History", "InvoiceHistory"))
             navPanel.Controls.Add(CreateSidebarButton("F9  Stock Ops", "StockOps"))
             navPanel.Controls.Add(CreateSidebarButton("F10 Settlements", "Settlements"))
+            navPanel.Controls.Add(CreateSidebarButton("F11 Accounts", "Accounts"))
 
             btnSettings = CreateSidebarButton("Admin  Settings", "Settings")
             navPanel.Controls.Add(btnSettings)
@@ -148,7 +151,7 @@ Namespace Forms
                 .Height = 84,
                 .Font = New Font("Segoe UI", 9.25F, FontStyle.Regular),
                 .ForeColor = Color.FromArgb(207, 219, 232),
-                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, inventory oversight, invoice history, stock operations, settlement workflows, and admin configuration management.",
+                .Text = "Current build includes authentication, analytics, masters, billing, purchases, reports, inventory oversight, invoice history, stock operations, settlement workflows, accounting, and admin configuration management.",
                 .TextAlign = ContentAlignment.BottomLeft
             }
 
@@ -269,6 +272,7 @@ Namespace Forms
                     "- Invoice history now supports saved invoice search, reopen-for-edit, re-export, preview, print, and document access.",
                     "- Stock operations now support purchase returns and manual stock adjustments with ledger posting and payable corrections.",
                     "- Settlements now support customer collections and supplier payment posting with balance history.",
+                    "- Accounts now support ledger master, manual vouchers, day book review, ledger statements, and auto-posting from operational modules.",
                     "- Settings now support company profile, operational prefixes, template control, backup and restore, and database maintenance.",
                     "- Remaining work is focused on final refinement rather than missing core business flows."),
                 .TextAlign = ContentAlignment.TopLeft
@@ -370,6 +374,8 @@ Namespace Forms
                 Case "Settlements"
                     OpenSettlementsDialog()
                     Await RefreshSummaryAsync()
+                Case "Accounts"
+                    OpenAccountsDialog()
                 Case "Settings"
                     If Not SessionManager.IsAdmin Then
                         MessageBox.Show("Settings access is limited to administrator accounts.", "Access Restricted", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -429,6 +435,12 @@ Namespace Forms
 
         Private Sub OpenSettingsDialog()
             Using form As New FrmSettings(_settingsService, _maintenanceService)
+                form.ShowDialog(Me)
+            End Using
+        End Sub
+
+        Private Sub OpenAccountsDialog()
+            Using form As New FrmAccounts(_accountingService)
                 form.ShowDialog(Me)
             End Using
         End Sub
@@ -510,6 +522,9 @@ Namespace Forms
                     Return True
                 Case Keys.F10
                     OpenSettlementsDialog()
+                    Return True
+                Case Keys.F11
+                    OpenAccountsDialog()
                     Return True
             End Select
 

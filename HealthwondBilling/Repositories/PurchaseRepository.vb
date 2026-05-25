@@ -58,6 +58,7 @@ Namespace Repositories
                     Next
 
                     UpdateSupplierOutstanding(connection, transaction, draft.SupplierId, draft.Summary.NetAmount)
+                    AccountingPostingHelper.PostPurchaseVoucher(connection, transaction, purchaseId, draft, createdByUserId)
                     transaction.Commit()
                     Return purchaseId
                 End Using

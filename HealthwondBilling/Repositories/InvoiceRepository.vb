@@ -65,6 +65,7 @@ Namespace Repositories
                     Next
 
                     AdjustCustomerOutstanding(connection, transaction, draft.CustomerId, draft.Summary.BalanceAmount)
+                    AccountingPostingHelper.PostInvoiceVoucher(connection, transaction, invoiceId, draft, createdByUserId)
                     transaction.Commit()
                     Return invoiceId
                 End Using
@@ -87,6 +88,7 @@ Namespace Repositories
                     Next
 
                     AdjustCustomerOutstanding(connection, transaction, draft.CustomerId, draft.Summary.BalanceAmount)
+                    AccountingPostingHelper.PostInvoiceVoucher(connection, transaction, draft.InvoiceId, draft, updatedByUserId)
                     transaction.Commit()
                     Return draft.InvoiceId
                 End Using

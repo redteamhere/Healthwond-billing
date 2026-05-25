@@ -15,6 +15,7 @@ Namespace Database
             Using connection = _connectionFactory.CreateOpenConnection()
                 Using transaction = connection.BeginTransaction()
                     EnsureDefaultSettings(connection, transaction)
+                    EnsureDefaultAccounts(connection, transaction)
                     EnsureDefaultUsers(connection, transaction)
                     EnsureSampleSuppliers(connection, transaction)
                     EnsureSampleCustomers(connection, transaction)
@@ -36,9 +37,33 @@ Namespace Database
             InsertSetting(connection, transaction, "PurchasePrefix", "PUR", "Prefix for auto-generated purchase numbers.", createdAt)
             InsertSetting(connection, transaction, "ReceiptPrefix", "RCPT", "Prefix for auto-generated customer collection receipts.", createdAt)
             InsertSetting(connection, transaction, "SupplierPaymentPrefix", "SPAY", "Prefix for auto-generated supplier payment numbers.", createdAt)
+            InsertSetting(connection, transaction, "PurchaseReturnPrefix", "PRN", "Prefix for auto-generated purchase return numbers.", createdAt)
+            InsertSetting(connection, transaction, "StockAdjustmentPrefix", "ADJ", "Prefix for auto-generated stock adjustment numbers.", createdAt)
             InsertSetting(connection, transaction, "LowStockThreshold", "10", "Default low stock alert threshold.", createdAt)
             InsertSetting(connection, transaction, "CurrencySymbol", "Rs.", "Default invoice currency symbol.", createdAt)
             InsertSetting(connection, transaction, "InvoiceTemplatePath", "Templates/GSTInvoiceTemplate.xlsx", "Default GST invoice template path.", createdAt)
+        End Sub
+
+        Private Sub EnsureDefaultAccounts(connection As DbConnection, transaction As DbTransaction)
+            Dim createdAt As String = SqliteDateHelper.ToStorageDateTime(DateTime.Now)
+
+            InsertAccountGroup(connection, transaction, "Cash & Bank", "Asset", 10, createdAt)
+            InsertAccountGroup(connection, transaction, "Sundry Debtors", "Asset", 20, createdAt)
+            InsertAccountGroup(connection, transaction, "Input Taxes", "Asset", 30, createdAt)
+            InsertAccountGroup(connection, transaction, "Sundry Creditors", "Liability", 40, createdAt)
+            InsertAccountGroup(connection, transaction, "Output Taxes", "Liability", 50, createdAt)
+            InsertAccountGroup(connection, transaction, "Sales Accounts", "Income", 60, createdAt)
+            InsertAccountGroup(connection, transaction, "Purchase Accounts", "Expense", 70, createdAt)
+            InsertAccountGroup(connection, transaction, "Indirect Expenses", "Expense", 80, createdAt)
+
+            InsertSystemLedger(connection, transaction, "Cash in Hand", "Cash & Bank", createdAt)
+            InsertSystemLedger(connection, transaction, "Bank Account", "Cash & Bank", createdAt)
+            InsertSystemLedger(connection, transaction, "Output GST", "Output Taxes", createdAt)
+            InsertSystemLedger(connection, transaction, "Input GST", "Input Taxes", createdAt)
+            InsertSystemLedger(connection, transaction, "Sales Account", "Sales Accounts", createdAt)
+            InsertSystemLedger(connection, transaction, "Purchase Account", "Purchase Accounts", createdAt)
+            InsertSystemLedger(connection, transaction, "Purchase Return Account", "Purchase Accounts", createdAt)
+            InsertSystemLedger(connection, transaction, "Round Off", "Indirect Expenses", createdAt)
         End Sub
 
         Private Sub InsertSetting(connection As DbConnection, transaction As DbTransaction, key As String, value As String, description As String, updatedAt As String)
@@ -51,6 +76,35 @@ Namespace Database
                 command.AddParameter("@SettingValue", value)
                 command.AddParameter("@Description", description)
                 command.AddParameter("@UpdatedAt", updatedAt)
+                command.ExecuteNonQuery()
+            End Using
+        End Sub
+
+        Private Sub InsertAccountGroup(connection As DbConnection, transaction As DbTransaction, groupName As String, nature As String, displayOrder As Integer, createdAt As String)
+            Using command = connection.CreateCommand()
+                command.Transaction = transaction
+                command.CommandText =
+                    "INSERT OR IGNORE INTO AccountGroups (GroupName, Nature, DisplayOrder, IsSystem, CreatedAt, UpdatedAt) " &
+                    "VALUES (@GroupName, @Nature, @DisplayOrder, 1, @CreatedAt, @UpdatedAt);"
+                command.AddParameter("@GroupName", groupName)
+                command.AddParameter("@Nature", nature)
+                command.AddParameter("@DisplayOrder", displayOrder)
+                command.AddParameter("@CreatedAt", createdAt)
+                command.AddParameter("@UpdatedAt", createdAt)
+                command.ExecuteNonQuery()
+            End Using
+        End Sub
+
+        Private Sub InsertSystemLedger(connection As DbConnection, transaction As DbTransaction, ledgerName As String, groupName As String, createdAt As String)
+            Using command = connection.CreateCommand()
+                command.Transaction = transaction
+                command.CommandText =
+                    "INSERT OR IGNORE INTO Ledgers (LedgerName, AccountGroupId, OpeningBalance, OpeningBalanceType, IsSystem, IsPartyLedger, LinkedEntityType, LinkedEntityId, Notes, CreatedAt, UpdatedAt) " &
+                    "VALUES (@LedgerName, (SELECT Id FROM AccountGroups WHERE GroupName = @GroupName LIMIT 1), 0, 'Dr', 1, 0, NULL, NULL, '', @CreatedAt, @UpdatedAt);"
+                command.AddParameter("@LedgerName", ledgerName)
+                command.AddParameter("@GroupName", groupName)
+                command.AddParameter("@CreatedAt", createdAt)
+                command.AddParameter("@UpdatedAt", createdAt)
                 command.ExecuteNonQuery()
             End Using
         End Sub

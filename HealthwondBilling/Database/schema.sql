@@ -216,6 +216,57 @@ CREATE TABLE IF NOT EXISTS SupplierPayments (
     FOREIGN KEY (SupplierId) REFERENCES Suppliers(Id)
 );
 
+CREATE TABLE IF NOT EXISTS AccountGroups (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    GroupName TEXT NOT NULL UNIQUE,
+    Nature TEXT NOT NULL,
+    DisplayOrder INTEGER NOT NULL DEFAULT 0,
+    IsSystem INTEGER NOT NULL DEFAULT 0,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Ledgers (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    LedgerName TEXT NOT NULL UNIQUE,
+    AccountGroupId INTEGER NOT NULL,
+    OpeningBalance NUMERIC NOT NULL DEFAULT 0,
+    OpeningBalanceType TEXT NOT NULL DEFAULT 'Dr',
+    IsSystem INTEGER NOT NULL DEFAULT 0,
+    IsPartyLedger INTEGER NOT NULL DEFAULT 0,
+    LinkedEntityType TEXT NULL,
+    LinkedEntityId INTEGER NULL,
+    Notes TEXT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL,
+    FOREIGN KEY (AccountGroupId) REFERENCES AccountGroups(Id)
+);
+
+CREATE TABLE IF NOT EXISTS AccountingVouchers (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    VoucherNumber TEXT NOT NULL UNIQUE,
+    VoucherType TEXT NOT NULL,
+    VoucherDate TEXT NOT NULL,
+    ReferenceNumber TEXT NULL,
+    Narration TEXT NULL,
+    SourceType TEXT NULL,
+    SourceId INTEGER NULL,
+    CreatedBy INTEGER NOT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS AccountingVoucherEntries (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    VoucherId INTEGER NOT NULL,
+    LedgerId INTEGER NOT NULL,
+    EntryType TEXT NOT NULL,
+    Amount NUMERIC NOT NULL DEFAULT 0,
+    Remarks TEXT NULL,
+    FOREIGN KEY (VoucherId) REFERENCES AccountingVouchers(Id) ON DELETE CASCADE,
+    FOREIGN KEY (LedgerId) REFERENCES Ledgers(Id)
+);
+
 CREATE TABLE IF NOT EXISTS StockLedger (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     ProductId INTEGER NOT NULL,
@@ -278,6 +329,12 @@ CREATE INDEX IF NOT EXISTS IX_CustomerPayments_CustomerId ON CustomerPayments(Cu
 CREATE INDEX IF NOT EXISTS IX_Purchases_PurchaseDate ON Purchases(PurchaseDate);
 CREATE INDEX IF NOT EXISTS IX_SupplierPayments_PaymentDate ON SupplierPayments(PaymentDate);
 CREATE INDEX IF NOT EXISTS IX_SupplierPayments_SupplierId ON SupplierPayments(SupplierId);
+CREATE INDEX IF NOT EXISTS IX_AccountingVouchers_VoucherDate ON AccountingVouchers(VoucherDate);
+CREATE INDEX IF NOT EXISTS IX_AccountingVouchers_VoucherType ON AccountingVouchers(VoucherType);
+CREATE INDEX IF NOT EXISTS IX_AccountingVoucherEntries_VoucherId ON AccountingVoucherEntries(VoucherId);
+CREATE INDEX IF NOT EXISTS IX_AccountingVoucherEntries_LedgerId ON AccountingVoucherEntries(LedgerId);
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Ledgers_LinkedEntity ON Ledgers(LinkedEntityType, LinkedEntityId) WHERE LinkedEntityType IS NOT NULL AND LinkedEntityId IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS UX_AccountingVouchers_Source ON AccountingVouchers(SourceType, SourceId) WHERE SourceType IS NOT NULL AND SourceId IS NOT NULL;
 CREATE INDEX IF NOT EXISTS IX_PurchaseReturns_ReturnDate ON PurchaseReturns(ReturnDate);
 CREATE INDEX IF NOT EXISTS IX_PurchaseReturnItems_PurchaseItemId ON PurchaseReturnItems(PurchaseItemId);
 CREATE INDEX IF NOT EXISTS IX_StockLedger_ProductId ON StockLedger(ProductId);

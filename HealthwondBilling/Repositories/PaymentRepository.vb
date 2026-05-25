@@ -128,6 +128,7 @@ Namespace Repositories
                     Dim balanceAfterPayment As Decimal = Decimal.Round(currentOutstanding - paymentAmount, 2, MidpointRounding.AwayFromZero)
                     Dim paymentId As Integer = InsertCustomerPayment(connection, transaction, draft, paymentAmount, balanceAfterPayment, createdByUserId)
                     UpdateCustomerOutstanding(connection, transaction, draft.CustomerId, balanceAfterPayment)
+                    AccountingPostingHelper.PostCustomerPaymentVoucher(connection, transaction, paymentId, draft, createdByUserId)
                     transaction.Commit()
                     Return paymentId
                 End Using
@@ -151,6 +152,7 @@ Namespace Repositories
                     Dim balanceAfterPayment As Decimal = Decimal.Round(currentOutstanding - paymentAmount, 2, MidpointRounding.AwayFromZero)
                     Dim paymentId As Integer = InsertSupplierPayment(connection, transaction, draft, paymentAmount, balanceAfterPayment, createdByUserId)
                     UpdateSupplierOutstanding(connection, transaction, draft.SupplierId, balanceAfterPayment)
+                    AccountingPostingHelper.PostSupplierPaymentVoucher(connection, transaction, paymentId, draft, createdByUserId)
                     transaction.Commit()
                     Return paymentId
                 End Using
